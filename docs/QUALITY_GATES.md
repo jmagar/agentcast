@@ -16,7 +16,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "fe10007"
+modified_at_commit: "b941533"
 review_basis: "local repo tooling policy"
 ---
 
