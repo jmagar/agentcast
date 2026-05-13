@@ -1,0 +1,33 @@
+[package]
+name = "agent-gateway"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "AgentCast gateway for exposing, filtering, routing, and bridging MCP and ACP capabilities."
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+agent-config = { path = "../agent-config" }
+agent-protocol = { path = "../agent-protocol" }
+agent-acp = { path = "../agent-acp" }
+agent-mcp = { path = "../agent-mcp" }
+agent-runtime = { path = "../agent-runtime" }
+
+rmcp.workspace = true
+agent-client-protocol.workspace = true
+async-trait.workspace = true
+tokio-util.workspace = true
+
+tokio.workspace = true
+futures.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+jiff.workspace = true
+url.workspace = true

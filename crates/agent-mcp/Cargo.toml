@@ -1,0 +1,28 @@
+[package]
+name = "agent-mcp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "AgentCast Model Context Protocol integration, MCP clients, MCP server support, and tool metadata."
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+agent-protocol = { path = "../agent-protocol" }
+
+rmcp.workspace = true
+async-trait.workspace = true
+tokio-util.workspace = true
+
+tokio.workspace = true
+futures.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+reqwest.workspace = true
+url.workspace = true
+uuid.workspace = true
+jiff.workspace = true

@@ -1,0 +1,25 @@
+pre-commit:
+  parallel: true
+  commands:
+    conflict-markers:
+      run: scripts/hooks/check-conflict-markers.sh
+    large-files:
+      run: scripts/hooks/check-large-files.sh
+    secret-scan:
+      run: scripts/hooks/check-secrets.sh
+    structured-syntax:
+      run: scripts/hooks/check-structured-syntax.sh
+    line-endings-and-modes:
+      run: scripts/hooks/check-line-endings-and-modes.sh
+
+pre-push:
+  parallel: false
+  commands:
+    fmt:
+      run: cargo fmt --all -- --check
+    check:
+      run: cargo check --workspace
+    test:
+      run: cargo test --workspace
+    clippy:
+      run: cargo clippy --workspace --all-targets -- -D warnings

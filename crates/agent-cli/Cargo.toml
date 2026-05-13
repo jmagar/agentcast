@@ -1,0 +1,29 @@
+[package]
+name = "agent-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "AgentCast CLI commands, command routing, and operator-facing output."
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+agent-config = { path = "../agent-config" }
+agent-protocol = { path = "../agent-protocol" }
+agent-registry = { path = "../agent-registry" }
+agent-marketplace = { path = "../agent-marketplace" }
+agent-runtime = { path = "../agent-runtime" }
+agent-gateway = { path = "../agent-gateway" }
+
+clap.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+jiff.workspace = true
+url.workspace = true

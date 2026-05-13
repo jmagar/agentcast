@@ -1,0 +1,38 @@
+[package]
+name = "agent-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "AgentCast HTTP API routes, DTOs, server state, and Axum integration."
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+agent-config = { path = "../agent-config" }
+agent-protocol = { path = "../agent-protocol" }
+agent-acp = { path = "../agent-acp" }
+agent-mcp = { path = "../agent-mcp" }
+agent-registry = { path = "../agent-registry" }
+agent-marketplace = { path = "../agent-marketplace" }
+agent-runtime = { path = "../agent-runtime" }
+agent-gateway = { path = "../agent-gateway" }
+agent-auth = { path = "../agent-auth" }
+
+utoipa.workspace = true
+utoipa-scalar.workspace = true
+
+axum.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+tokio.workspace = true
+futures.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+jiff.workspace = true
+url.workspace = true

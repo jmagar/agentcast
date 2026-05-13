@@ -1,0 +1,152 @@
+Roots - Model Context Protocol
+## > Documentation Index
+> Fetch the complete documentation index at:
+[> https://modelcontextprotocol.io/llms.txt
+](https://modelcontextprotocol.io/llms.txt)
+> Use this file to discover all available pages before exploring further.
+The Model Context Protocol (MCP) provides a standardized way for clients to expose
+filesystem “roots” to servers. Roots inform servers about the directories and files the
+client considers relevant, so that servers can focus their operations accordingly. They
+are informational guidance rather than an access-control mechanism. The protocol does
+not enforce that servers stay within roots. Servers can request the list of roots from
+supporting clients.
+##
+[​
+](#user-interaction-model)
+User Interaction Model
+Roots in MCP are typically exposed through workspace or project configuration interfaces.
+For example, implementations could offer a workspace/project picker that allows users to
+select directories and files the server should have access to. This can be combined with
+automatic workspace detection from version control systems or project files.
+However, implementations are free to expose roots through any interface pattern that
+suits their needs—the protocol itself does not mandate any specific user
+interaction model.
+Servers **MUST** send server-to-client requests (such as `roots/list`,
+`sampling/createMessage`, or `elicitation/create`) only in association with an
+originating client request (e.g., during `tools/call`, `resources/read`, or
+`prompts/get` processing).Standalone server-initiated requests of these types on independent
+communication streams (unrelated to any client request) are not supported and
+**MUST NOT** be implemented. Future transport implementations are not required
+to support this pattern.
+##
+[​
+](#capabilities)
+Capabilities
+Clients that support roots **MUST** declare the `roots` capability in
+`\_meta.io.modelcontextprotocol/clientCapabilities` on each request:
+```
+`{
+"capabilities": {
+"roots": {}
+}
+}
+`
+```
+##
+[​
+](#protocol-messages)
+Protocol Messages
+###
+[​
+](#listing-roots)
+Listing Roots
+To retrieve roots during the processing of a client request, servers send an `IncompleteResponse`
+containing a `roots/list` request:
+**Request:**
+```
+`{
+"method": "roots/list"
+}
+`
+```
+**Response:**
+```
+`{
+"result": {
+"roots": [
+{
+"uri": "file:///home/user/projects/myproject",
+"name": "My Project"
+}
+]
+}
+}
+`
+```
+##
+[​
+](#message-flow)
+Message Flow
+##
+[​
+](#data-types)
+Data Types
+###
+[​
+](#root)
+Root
+A root definition includes:
+* `uri`: Unique identifier for the root. This **MUST** be a `file://` URI in the current
+specification.
+* `name`: Optional human-readable name for display purposes.
+Example roots for different use cases:
+####
+[​
+](#project-directory)
+Project Directory
+```
+`{
+"uri": "file:///home/user/projects/myproject",
+"name": "My Project"
+}
+`
+```
+####
+[​
+](#multiple-repositories)
+Multiple Repositories
+```
+`[
+{
+"uri": "file:///home/user/repos/frontend",
+"name": "Frontend Repository"
+},
+{
+"uri": "file:///home/user/repos/backend",
+"name": "Backend Repository"
+}
+]
+`
+```
+##
+[​
+](#error-handling)
+Error Handling
+If an error occurs, the client does not need to replay the initial call with an error message
+as the server is not waiting for a response with the `IncompleteResponse` pattern.
+##
+[​
+](#security-considerations)
+Security Considerations
+1. Clients **MUST**:
+* Only expose roots with appropriate permissions
+* Validate all root URIs to prevent path traversal
+* Implement proper access controls
+* Monitor root accessibility
+* Servers **SHOULD**:
+* Handle cases where roots become unavailable
+* Respect root boundaries during operations
+* Validate all paths against provided roots
+##
+[​
+](#implementation-guidelines)
+Implementation Guidelines
+1. Clients **SHOULD**:
+* Prompt users for consent before exposing roots to servers
+* Provide clear user interfaces for root management
+* Validate root accessibility before exposing
+* Monitor for root changes
+* Servers **SHOULD**:
+* Check for roots capability before usage
+* Respect root boundaries in operations
+* Cache root information appropriately

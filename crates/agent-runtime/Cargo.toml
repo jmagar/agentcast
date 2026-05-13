@@ -1,0 +1,33 @@
+[package]
+name = "agent-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "AgentCast local runtime for process supervision, workspaces, session state, and runtime events."
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+agent-config = { path = "../agent-config" }
+agent-protocol = { path = "../agent-protocol" }
+
+process-wrap.workspace = true
+nix.workspace = true
+tokio-util.workspace = true
+directories.workspace = true
+walkdir.workspace = true
+globset.workspace = true
+tempfile.workspace = true
+strip-ansi-escapes.workspace = true
+
+tokio.workspace = true
+futures.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+jiff.workspace = true

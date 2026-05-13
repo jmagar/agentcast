@@ -1,0 +1,22 @@
+[package]
+name = "agent-ui-contracts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Shared AgentCast API DTOs and UI-facing contracts for web, desktop, and external clients."
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+agent-protocol = { path = "../agent-protocol" }
+agent-schema = { path = "../agent-schema" }
+
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+jiff.workspace = true
+url.workspace = true
+

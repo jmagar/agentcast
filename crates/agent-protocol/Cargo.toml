@@ -1,0 +1,19 @@
+[package]
+name = "agent-protocol"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Protocol-neutral AgentCast models for sessions, providers, tools, registries, and marketplace items."
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+jiff.workspace = true
+url.workspace = true

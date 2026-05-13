@@ -1,0 +1,739 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.github/
+  workflows/
+    markdown-format.yml
+  CODEOWNERS
+specification/
+  draft/
+    enterprise-managed-authorization.mdx
+    oauth-client-credentials.mdx
+.gitignore
+LICENSE
+MAINTAINERS.md
+package.json
+README.md
+SECURITY.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".github/workflows/markdown-format.yml">
+name: Markdown Format Check
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.md'
+      - '**/*.mdx'
+  pull_request:
+    paths:
+      - '**/*.md'
+      - '**/*.mdx'
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check markdown formatting
+        run: npm run check:docs:format
+
+      - name: Check markdown links
+        run: npm run check:docs:links
+</file>
+
+<file path=".github/CODEOWNERS">
+# CODEOWNERS for MCP Authorization Extensions
+# The auth-wg team owns all files in this repository
+
+* @modelcontextprotocol/auth-wg
+</file>
+
+<file path="specification/draft/enterprise-managed-authorization.mdx">
+---
+title: Enterprise-Managed Authorization
+---
+
+<Info>**Protocol Revision**: draft</Info>
+
+## 1. Introduction
+
+### 1.1 Purpose and Scope
+
+This document defines an application of the "[Identity Assertion Authorization Grant](https://datatracker.ietf.org/doc/draft-ietf-oauth-identity-assertion-authz-grant/)" for use within enterprise deployments of the Model Context Protocol (MCP).
+
+When an MCP Client and MCP Server are both enabled for single sign-on through an enterprise Identity Provider, this three-way relationship can be leveraged to streamline the authorization process.
+
+This document specifies how an MCP Client can obtain an access token from an MCP Server's Authorization Server by presenting an identity assertion it previously obtained from an enterprise Identity Provider during single sign-on. It also describes how an MCP Server's Authorization Server can validate the request from the client before issuing an access token.
+
+This profile is designed to facilitate secure and interoperable authorization within enterprise environments, leveraging the organization's existing identity infrastructure. Enterprise-managed authorization for MCP Clients and Servers has some key benefits:
+
+- For end users, this removes the need to manually connect and authorize the MCP Client to each MCP Server for use within the organization.
+- For enterprise admins, this enables visibility and control over which MCP Servers are able to be used within the organization.
+- For MCP clients, this enables the client to automatically obtain access tokens for any connected MCP servers without user interaction, and removes the need for user interaction when obtaining new access tokens.
+
+### 1.2 Roles and Terminology
+
+- **Resource Application**: In the context of this profile, the Resource Application is the MCP Server.
+- **Identity Provider (IdP)**: An entity that creates, maintains, and manages identity information, provides authentication services, and is trusted by a set of applications in an organization's app ecosystem.
+- **Identity Assertion**: A security token (e.g., ID Token, SAML Assertion) that contains information about an authenticated user and is issued by an Identity Provider trusted by the Authorization Server.
+- **Authorization Server**: This profile uses the term "Authorization Server" to refer to the authorization server that issues tokens to be used at the MCP server.
+- **Client**: In the context of this profile, the Client is the MCP Client.
+- **ID Token**: A security token that contains claims about the authentication of a user when using a client, as defined in [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#IDToken).
+- **Subject Token**: A security token that represents the identity of the user, such as an ID Token.
+- **JAG**: JWT Authorization Grant, as described in [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523#section-2.1).
+
+## 2. Identity Assertion Authorization Grant Overview
+
+This profile is an application of the "Identity Assertion Authorization Grant" [draft-ietf-oauth-identity-assertion-authz-grant](https://datatracker.ietf.org/doc/draft-ietf-oauth-identity-assertion-authz-grant/), which itself is a profile of "Identity and Authorization Chaining Across Domains" [draft-ietf-oauth-identity-chaining](https://datatracker.ietf.org/doc/draft-ietf-oauth-identity-chaining/).
+
+The Identity Assertion Authorization Grant follows three steps:
+
+1. Single Sign-On to the MCP Client via OpenID Connect or SAML
+2. Token Exchange ([RFC8693](https://datatracker.ietf.org/doc/html/rfc8693))
+3. JWT Authorization Grant ([RFC7523](https://datatracker.ietf.org/doc/html/rfc7523))
+
+The core flow is as follows:
+
+- A user logs in to an MCP Client through their enterprise Identity Provider, resulting in an Identity Assertion (ID Token or SAML assertion) being issued to the MCP Client.
+- The MCP Client sends a Token Exchange [[RFC8693](https://datatracker.ietf.org/doc/html/rfc8693)] request to the Identity Provider including the identity assertion and identifier of the MCP Server it is attempting to access, and obtains a Identity Assertion JWT Authorization Grant (ID-JAG).
+- The MCP Client uses the Identity Assertion JWT Authorization Grant as a JWT Authorization Grant [[RFC7523](https://datatracker.ietf.org/doc/html/rfc7523)] to request an access token from the Authorization Server.
+- The Authorization Server validates the Identity Assertion Authorization Grant and, if valid, issues an access token.
+- The MCP Client uses the access token to make requests to the MCP Server.
+
+### 2.1 Sequence Diagram
+
+The following diagram outlines an example flow:
+
+```mermaid
+sequenceDiagram
+    participant UA as Browser
+    participant C as MCP Client
+    participant IdP as Identity Provider
+    participant MAS as MCP Authorization Server
+    participant MRS as MCP Resource Server
+
+    C-->>UA: Redirect to IdP
+    UA->>IdP: Redirect to IdP
+    Note over IdP: User Logs In
+    IdP-->>UA: IdP Authorization Code
+    UA->>C: IdP Authorization Code
+    C->>IdP: Token Request with IdP Authorization Code
+    IdP-->>C: ID Token
+
+    note over C: User is logged<br/>in to MCP Client.<br/>Client stores ID Token.
+
+    C->>IdP: Exchange ID Token for ID-JAG
+    note over IdP: Evaluate Policy
+    IdP-->>C: Responds with ID-JAG
+    C->>MAS: Token Request with ID-JAG
+    note over MAS: Validate ID-JAG
+    MAS-->>C: MCP Access Token
+
+    loop
+    C->>MRS: Call MCP API with Access Token
+    MRS-->>C: MCP Response with Data
+    end
+```
+
+## 3. User Authentication
+
+To authenticate a user, the MCP Client initiates the process through a request with the IdP using OpenID Connect or SAML.
+
+For example, a web-based MCP client might initiate the user authentication process by redirecting the browser using OpenID Connect:
+
+```
+302 Redirect
+Location: https://acme.idp.example/authorize?response_type=code&scope=openid&client_id=...
+```
+
+The user authenticates with the IdP, and is redirected back to the Client with an authorization code, which it can then exchange for an ID Token.
+
+The enterprise IdP may enforce additional security controls such as multi-factor authentication before granting the user access to the MCP Client.
+For example, in an OpenID Connect flow, after receiving a redirect from the IdP with an authorization code, the MCP Client makes a request to the Authorization Server and, if valid, receives the tokens in the response:
+
+```
+POST /token HTTP/1.1
+Host: acme.idp.example
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&code=.....
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "id_token": "[REDACTED_SECRET]",
+  "token_type": "Bearer",
+  "access_token": "[REDACTED_SECRET]",
+  "scope": "openid"
+}
+```
+
+## 4. Token Exchange
+
+To request a JWT Assertion Grant, the MCP Client **MUST** make a Token Exchange ([RFC8693](https://datatracker.ietf.org/doc/html/rfc8693)) request to the IdP's Token Endpoint with the following parameters:
+
+| Parameter              | Required/Optional | Description                                                                                                                                                              | Example/Allowed Values                                                                                 |
+| ---------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `requested_token_type` | REQUIRED          | Indicates that an ID Assertion JWT is being requested.                                                                                                                   | `urn:ietf:params:oauth:token-type:id-jag`                                                              |
+| `audience`             | REQUIRED          | The Issuer URL of the Authorization Server.                                                                                                                              | `https://auth.chat.example/`                                                                           |
+| `resource`             | REQUIRED          | The RFC9728 Resource Identifier of the MCP server.                                                                                                                       | `https://mcp.chat.example/`                                                                            |
+| `scope`                | OPTIONAL          | The space-separated list of scopes at the MCP Server that are being requested.                                                                                           | `scope1 scope2`                                                                                        |
+| `subject_token`        | REQUIRED          | The identity assertion (e.g. the OpenID Connect ID Token or SAML assertion) for the target end-user.                                                                     | (JWT or SAML assertion string)                                                                         |
+| `subject_token_type`   | REQUIRED          | Indicates the type of the security token in the `subject_token` parameter, as specified in [RFC8693 Section 3](https://datatracker.ietf.org/doc/html/rfc8693#section-3). | `urn:ietf:params:oauth:token-type:id_token` (OIDC)<br/>`urn:ietf:params:oauth:token-type:saml2` (SAML) |
+
+Additional parameters defined in [Section 2.1 of RFC8693](https://datatracker.ietf.org/doc/html/rfc8693#name-request) (`actor_token` and `actor_token_type`) are not used in this specification.
+
+If the IdP requires client authentication when the MCP Client performs OpenID Connect for single sign-on, then client authentication of the Token Exchange request is also required.
+
+The example below illustrates the Token Exchange request, using an OpenID Connect ID Token as the Identity Assertion and a client secret as the client authentication method. The ID token is passed as a Subject Token.
+
+```
+POST /oauth2/token HTTP/1.1
+Host: acme.idp.example
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+&requested_token_type=urn:ietf:params:oauth:token-type:id-jag
+&audience=https://auth.chat.example/
+&resource=https://mcp.chat.example/
+&scope=chat.read+chat.history
+&subject_token=[REDACTED_SECRET]
+&subject_token_type=urn:ietf:params:oauth:token-type:id_token
+&client_id=2ec954a1d60620116d36d9ceb7
+&client_secret=[REDACTED_SECRET]
+```
+
+### 4.1 Processing Rules
+
+The IdP MUST validate the Subject Token, and MUST validate that the audience of the Subject Token (e.g. the `aud` claim of the ID Token) matches the Client Identifier of the MCP client making this request (e.g. by checking the `client_id` in the client authentication).
+
+The IdP evaluates administrator-defined policies for the token exchange request and determines if the MCP Client should be granted access to act on behalf of the user for the target MCP Server and scopes.
+
+The IdP may also introspect the authentication context described in the Identity Assertion to determine if step-up authentication is required.
+
+### 4.2 Token Exchange Response
+
+If access is granted, the IdP creates a signed Identity Assertion JWT Authorization Grant and returns it in the token exchange response defined in [Section 2.2 of RFC8693](https://datatracker.ietf.org/doc/html/rfc8693#section-2.2):
+
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+Pragma: no-cache
+
+{
+  "issued_token_type": "urn:ietf:params:oauth:token-type:id-jag",
+  "access_token": "[REDACTED_SECRET]",
+  "token_type": "N_A",
+  "scope": "chat.read chat.history",
+  "expires_in": 300
+}
+```
+
+| Parameter           | Required/Optional | Description                                                                                                                                                              | Example/Allowed Values                             |
+| ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- |
+| `issued_token_type` | REQUIRED          | Indicates the type of token issued.                                                                                                                                      | `urn:ietf:params:oauth:token-type:id-jag`          |
+| `access_token`      | REQUIRED          | The Identity Assertion JWT Authorization Grant. (Note: Token Exchange requires the `access_token` response parameter for historical reasons, not an OAuth access token.) | (JWT string)                                       |
+| `token_type`        | REQUIRED          | The token type.                                                                                                                                                          | `N_A` (because this is not an OAuth access token.) |
+| `scope`             | OPTIONAL/REQUIRED | OPTIONAL if the scope of the issued token is identical to the requested; otherwise REQUIRED. May be fewer scopes than requested.                                         | `scope1 scope2`                                    |
+| `expires_in`        | RECOMMENDED       | The lifetime in seconds of the authorization grant.                                                                                                                      | `3600`                                             |
+
+#### 4.2.1 Error Response
+
+In case of an error occurring while performing the token exchange, the IdP will return an OAuth 2.0 Token Error response as defined in [Section 5.2 of RFC6749](https://datatracker.ietf.org/doc/html/rfc6749#section-5.2). An example response may look like this:
+
+```
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+  "error": "invalid_grant",
+  "error_description": "Audience validation failed"
+}
+```
+
+### 4.3 Identity Assertion JWT Authorization Grant
+
+The Identity Assertion JWT Authorization Grant (ID-JAG) is issued and signed by the IdP, and describes the intended audience of the authorization grant as well as the client to which it was issued and the subject identifier of the resource owner, using the following claims:
+
+| Parameter   | Required/Optional | Description                                                                                                                                                       | Reference / Example                                                                                         |
+| ----------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `iss`       | REQUIRED          | The IdP issuer URL.                                                                                                                                               | [Section 4.1.1 of RFC7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.1)                     |
+| `sub`       | REQUIRED          | The subject identifier (e.g., user ID) of the user at the MCP Server.                                                                                             | [Section 4.1.2 of RFC7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.2)                     |
+| `aud`       | REQUIRED          | The Issuer URL of the Authorization Server.                                                                                                                       | [Section 4.1.3 of RFC7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3)                     |
+| `resource`  | REQUIRED          | The Resource Identifier of the MCP Server.                                                                                                                        | [Section 1.2 of RFC9728](https://datatracker.ietf.org/doc/html/rfc9728#section-1.2)                         |
+| `client_id` | REQUIRED          | An identifier of the MCP Client registered at the Authorization Server that this JWT was issued to; SHOULD be a `client_id` as defined in Section 4.3 of RFC8693. | [Section 4.3 of RFC8693](https://datatracker.ietf.org/doc/html/rfc8693#section-4.3)                         |
+| `jti`       | REQUIRED          | Unique ID of this JWT.                                                                                                                                            | [Section 4.1.7 of RFC7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.7)                     |
+| `exp`       | REQUIRED          | Expiration time of this JWT (Unix timestamp in seconds).                                                                                                          | [Section 4.1.4 of RFC7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.4)                     |
+| `iat`       | REQUIRED          | Issued-at time of this JWT (Unix timestamp in seconds).                                                                                                           | [Section 4.1.6 of RFC7519](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.6)                     |
+| `scope`     | OPTIONAL          | A JSON string containing a space-separated list of scopes associated with the token, per Section 3.3 of RFC6749.                                                  | `["scope1 scope2"]`<br/>[Section 3.3 of RFC6749](https://datatracker.ietf.org/doc/html/rfc6749#section-3.3) |
+
+The `typ` claim of the JWT indicated in the JWT header **MUST** be `oauth-id-jag+jwt`.
+
+An example JWT shown with expanded header and payload claims may look like this:
+
+```
+{
+  "typ": "oauth-id-jag+jwt"
+}
+.
+{
+  "jti": "9e43f81b64a33f20116179",
+  "iss": "https://acme.idp.example",
+  "sub": "U019488227",
+  "aud": "https://auth.chat.example/",
+  "resource": "https://mcp.chat.example/",
+  "client_id": "f53f191f9311af35",
+  "exp": 1311281970,
+  "iat": 1311280970,
+  "scope": "chat.read chat.history"
+}
+.
+signature
+```
+
+The IdP **MAY** add additional claims as necessary.
+
+#### Implementation notes
+
+If the IdP is multi-tenant and uses the same issuer for all tenants, the Authorization Server will already have IdP-specific logic to determine the tenant from the OpenID Connect ID Token (e.g., the `hd` claim for Google) or SAML assertion, and will need to use that if the IdP also has only one client registration for the Authorization Server.
+
+`sub` should be an opaque ID, as `iss+sub` is unique. The IdP might want to also include additional user information, such as an email address, which it should do as a new `email` claim. This may allow the Authorization Server to properly link existing user accounts to the `sub` identifier used within the enterprise context for SSO.
+
+## 5. Access Token Request
+
+The MCP Client makes an access token request to the Authorization Server using the previously obtained Identity Assertion Authorization Grant as a JWT Assertion as defined by [RFC7523](https://datatracker.ietf.org/doc/html/rfc7523).
+
+| Parameter    | Required/Optional | Description                                                                                 | Example/Allowed Values                                                                                                                |
+| ------------ | ----------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `grant_type` | REQUIRED          | **MUST** be `urn:ietf:params:oauth:grant-type:jwt-bearer`                                   | `urn:ietf:params:oauth:grant-type:jwt-bearer`<br/>[Section 4.1 of RFC7523](https://datatracker.ietf.org/doc/html/rfc7523#section-4.1) |
+| `assertion`  | REQUIRED          | The Identity Assertion JWT Authorization Grant obtained in the previous token exchange step | (JWT string)                                                                                                                          |
+
+The MCP Client authenticates with its credentials as registered with the Authorization Server.
+
+If the MCP Client has not yet registered with the Authorization Server, then it can do a [Dynamic Client Registration](/specification/draft/basic/authorization#dynamic-client-registration) request at this stage.
+
+An example request may look like this:
+
+```
+POST /oauth2/token HTTP/1.1
+Host: auth.chat.example
+Authorization: Basic yZS1yYW5kb20tc2VjcmV0v3JOkF0XG5Qx2
+
+grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer
+assertion=[REDACTED_SECRET]
+```
+
+### 5.1 Processing Rules
+
+All of [Section 5.2 of RFC7521](https://datatracker.ietf.org/doc/html/rfc7521#section-5.2) applies, in addition to the following processing rules:
+
+- Validate the JWT `typ` is `oauth-id-jag+jwt` (per [RFC8725](https://datatracker.ietf.org/doc/html/rfc8725))
+- The `aud` claim of the assertion JWT **MUST** identify the Issuer URL of the Authorization Server as the intended audience of the JWT.
+- The `client_id` claim of the assertion JWT **MUST** identify the same client as the client authentication in the request (e.g., the `client_id` specified in a basic auth header).
+
+### 5.2 Access Token Response
+
+The Authorization Server responds with an OAuth 2.0 Token Response, like this:
+
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+  "token_type": "Bearer",
+  "access_token": "[REDACTED_SECRET]",
+  "expires_in": 86400,
+  "scope": "chat.read chat.history"
+}
+```
+
+## 6. Security Considerations
+
+### 6.1 Client Registration
+
+In most enterprise deployments, the IdP policy will only allow users to sign in to pre-registered clients. The MCP client will likely need to be pre-registered with the enterprise IdP for single sign-on.
+
+It is also assumed that the MCP client will be pre-registered with the Authorization Server.
+
+In order for the IdP to include the correct `client_id` in the ID-JAG (described in Section 4.3), the IdP will need to be aware of the MCP Client's `client_id` that it normally uses with the MCP Server. This mapping happens outside of the protocol, such as during the configuration of the feature in the IdP.
+
+### 6.2 Scope of Enterprise Visibility and Policy Enforcement
+
+This specification enables the enterprise IdP to be part of the issuance of the access token at the MCP Server. The visibility the IdP has between the MCP Client and MCP Server is limited to the process of issuing the access token, but does not extend to the actual API calls between the MCP Client and Server.
+
+This enables the enterprise IdP to enforce policies such as which users in the organization can use certain MCP clients with certain MCP servers. Depending on the granularity of the OAuth scopes defined at the MCP server, this can also extend to govern which scopes a given user can request.
+
+For example, the enterprise policy of granting an access token through this extension may allow users in the "engineering" group to get read-only access from an AI code editor to the source control MCP server, whereas users in the "marketing" group may be able to get read and write access to the internal documentation application.
+</file>
+
+<file path="specification/draft/oauth-client-credentials.mdx">
+---
+title: OAuth Client Credentials Extension
+---
+
+<div id="enable-section-numbers" />
+
+<Info>**Protocol Revision**: draft</Info>
+
+## Introduction
+
+### Purpose and Scope
+
+This extension defines OAuth 2.1 Client Credentials flow support for the Model
+Context Protocol, enabling machine-to-machine authentication without user
+interaction. This extension builds upon the baseline authorization requirements
+defined in the main [Authorization specification](../basic/authorization.mdx).
+
+### Extension Requirements
+
+This extension is **OPTIONAL** for MCP implementations. When adopted:
+
+- Implementations **MUST** conform to all requirements specified in this
+  extension
+- Implementations **MUST** also conform to the baseline authorization
+  requirements
+- This extension is specifically designed for HTTP-based transports
+
+### Standards Compliance
+
+This extension is based on the following established specifications:
+
+- OAuth 2.1 IETF DRAFT
+  ([draft-ietf-oauth-v2-1-13](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13))
+- OAuth 2.0 Authorization Server Metadata
+  ([RFC8414](https://datatracker.ietf.org/doc/html/rfc8414))
+- OAuth 2.0 Protected Resource Metadata
+  ([RFC9728](https://datatracker.ietf.org/doc/html/rfc9728))
+- JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and
+  Authorization Grants
+  ([RFC7523](https://datatracker.ietf.org/doc/html/rfc7523))
+
+## Client Credentials Flow
+
+### Overview
+
+The Client Credentials flow enables machine-to-machine authentication without
+user interaction. This flow requires pre-registered client credentials, which
+are typically established out-of-band through administrative channels. Dynamic
+Client Registration is not used in this flow.
+
+### Client Authentication Methods
+
+Clients **MUST** authenticate using one of these methods:
+
+- JWT Authentication (RECOMMENDED)
+  - Clients use JWT Authentication as defined in
+    [RFC 7523 Section 2.2](https://datatracker.ietf.org/doc/html/rfc7523#section-2.2).
+- Client Secret
+  - Clients use a Client Secret transmitted in the request content as defined
+    in
+    [OAuth 2.1 Section 2.4.1](https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-13.html#name-client-secret)
+
+### Server Metadata Requirements
+
+When supporting the client credentials flow, Authorization Server metadata
+**MUST** include the following fields:
+
+- `token_endpoint_auth_methods_supported`: **MUST** include at least one of:
+  - `"private_key_jwt"`
+  - `"client_secret_basic"`
+- `token_endpoint_auth_signing_alg_values_supported`: Required when supporting
+  JWT authentication
+
+### Flow Steps
+
+The complete Client Credentials flow proceeds as follows:
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant M as MCP Server (Resource Server)
+    participant A as Authorization Server
+
+    C->>M: MCP request without token
+    M->>C: HTTP 401 Unauthorized with WWW-Authenticate header
+    Note over C: Extract resource_metadata URL from WWW-Authenticate
+
+    C->>M: Request Protected Resource Metadata
+    M->>C: Return metadata
+
+    Note over C: Parse metadata and extract authorization server(s)<br/>Client determines AS to use
+
+    C->>A: GET Authorization server metadata endpoint
+    Note over C,A: Try OAuth 2.0 and OpenID Connect<br/>discovery endpoints in priority order
+    A-->>C: Authorization server metadata
+
+    Note over C: Prepare client authentication
+    alt JWT Authentication (RECOMMENDED)
+        Note over C: Generate signed JWT assertion
+        C->>A: POST /token with client_assertion
+    else Client Secret Authentication
+        Note over C: Use client_id and client_secret
+        C->>A: POST /token with client credentials
+    end
+    A->>C: Access token
+    C->>M: MCP request with access token
+    M-->>C: MCP response
+    Note over C,M: MCP communication continues with valid token
+```
+
+### Examples
+
+The following examples illustrate both client authentication methods:
+
+#### JWT Authentication Example
+
+```
+POST /token HTTP/1.1
+Host: auth.example.com
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
+&client_assertion=eyJhbGciOiJSUzI1NiIsImtpZCI6IjIyIn0.
+     eyJpc3Mi[...omitted for brevity...].
+     cC4hiUPo[...omitted for brevity...]
+&resource=https%3A%2F%2Fmcp.example.com
+&scope=mcp%3Aread
+```
+
+> **Note:** The `client_id` parameter is omitted from the request body as
+> [RFC 7523 Section 3](https://datatracker.ietf.org/doc/html/rfc7523#section-3)
+> specifies that client identification is conveyed through the `sub` claim
+> within the JWT assertion.
+
+#### Client Secret Authentication Example
+
+```
+POST /token HTTP/1.1
+Host: auth.example.com
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+&client_id=s6BhdRkqt3
+&client_secret=[REDACTED_SECRET]
+&resource=https%3A%2F%2Fmcp.example.com
+&scope=mcp%3Aread
+```
+
+## Security Considerations
+
+Implementations adopting this extension **MUST** follow OAuth 2.1 security best
+practices as laid out in
+[OAuth 2.1 Section 7. "Security Considerations"](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-13#name-security-considerations),
+with particular attention to:
+
+- Client authentication security
+- Token storage and handling
+- Communication security requirements
+- Client credential protection
+
+For detailed security guidance specific to client credentials flows, refer to
+[RFC 7523 Section 5 "Security Considerations"](https://datatracker.ietf.org/doc/html/rfc7523#section-5).
+</file>
+
+<file path=".gitignore">
+# Dependencies
+node_modules/
+
+# npm
+npm-debug.log*
+</file>
+
+<file path="LICENSE">
+MIT License
+
+Copyright (c) 2025 Model Context Protocol
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+</file>
+
+<file path="MAINTAINERS.md">
+# MCP Maintainers
+
+This document lists current maintainers of the Model Context Protocol ext-auth project.
+
+**Last updated:** October 14, 2025
+
+## Lead Maintainers
+
+- [Paul Carleton](https://github.com/pcarleton)
+
+## Core Maintainers
+
+- [Aaron Parecki](https://github.com/aaronpk)
+- [Darin McAdams](https://github.com/D-McAdams)
+- [Den Delimarsky](https://github.com/localden)
+</file>
+
+<file path="package.json">
+{
+  "name": "@modelcontextprotocol/ext-auth",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MCP Authorization Extensions",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "prettier": {
+    "overrides": [
+      {
+        "files": "*.{md,mdx}",
+        "options": {
+          "proseWrap": "preserve"
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "check:docs": "npm run check:docs:format && npm run check:docs:links",
+    "check:docs:format": "prettier --check \"**/*.{md,mdx}\"",
+    "check:docs:links": "find . -name '*.md' -not -path './node_modules/*' -exec markdown-link-check {} \\;",
+    "format": "prettier --write \"**/*.{md,mdx}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "markdown-link-check": "^3.12.1"
+  }
+}
+</file>
+
+<file path="README.md">
+# MCP Authorization Extensions
+
+The Model Context Protocol (MCP) specification is defined in the [main specification repository](https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs/specification). This repository contains **extensions** to the core protocol that define additional authorization mechanisms.
+
+These extensions are:
+
+- **Optional** - Implementations can choose to adopt these extensions
+- **Additive** - Extensions do not modify or break core protocol functionality; they add new capabilities while preserving core protocol behavior
+- **Composable** - Extensions are modular and designed to work together without conflicts, allowing implementations to adopt multiple extensions simultaneously
+- **Versioned independently** - Extensions follow the core MCP versioning cycle but may adopt independent versioning as needed
+
+## Extensions
+
+- [Client Credentials](https://github.com/modelcontextprotocol/ext-auth/blob/main/specification/draft/oauth-client-credentials.mdx)
+- [Enterprise-Managed Authorization](https://github.com/modelcontextprotocol/ext-auth/blob/main/specification/draft/enterprise-managed-authorization.mdx)
+
+## Governance
+
+This repository follows the [Model Context Protocol Governance](https://modelcontextprotocol.io/community/governance) process, with a dedicated set of maintainers for authorization extensions. See [MAINTAINERS.md](./MAINTAINERS.md) for the list of maintainers specific to this repository.
+
+All decisions regarding authorization extensions follow the same governance model as the core specification, including:
+
+- Specification Enhancement Proposals (SEPs)
+- Community discussion and consensus building
+- Maintainer review and approval
+- Transparent decision-making
+
+## Policies
+
+This repository follows the Model Context Protocol project policies:
+
+- [Code of Conduct](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/CODE_OF_CONDUCT.md)
+- [Contributing Guidelines](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/CONTRIBUTING.md)
+- [Security Policy](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/SECURITY.md)
+- [Antitrust Policy](https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/ANTITRUST.md)
+</file>
+
+<file path="SECURITY.md">
+# Security Policy
+
+Thank you for helping keep the Model Context Protocol and its ecosystem secure.
+
+## Reporting Security Issues
+
+If you discover a security vulnerability in this repository, please report it through
+the [GitHub Security Advisory process](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability)
+for this repository.
+
+Please **do not** report security vulnerabilities through public GitHub issues, discussions,
+or pull requests.
+
+## What to Include
+
+To help us triage and respond quickly, please include:
+
+- A description of the vulnerability
+- Steps to reproduce the issue
+- The potential impact
+- Any suggested fixes (optional)
+</file>
+
+</files>

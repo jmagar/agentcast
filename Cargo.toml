@@ -1,0 +1,91 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/jmagar/agentcast"
+authors = ["jmagar"]
+
+[workspace.dependencies]
+# async/runtime
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "process", "fs", "io-util", "time", "net"] }
+futures = "0.3"
+
+# serialization/errors
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+
+# http/api
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json", "gzip", "stream"] }
+axum = { version = "0.8", features = ["macros", "json", "tokio", "http2", "ws"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["trace", "cors", "compression-gzip", "timeout", "request-id"] }
+
+# cli/config/logging
+clap = { version = "4", features = ["derive", "env"] }
+toml = "1.1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+
+# ids/time
+uuid = { version = "1", features = ["v4", "serde"] }
+jiff = { version = "0.2", features = ["serde"] }
+url = { version = "2", features = ["serde"] }
+
+# protocol: MCP
+rmcp = { version = "1.6", features = [
+  "server",
+  "client",
+  "macros",
+  "transport-io",
+  "transport-child-process",
+  "transport-streamable-http-server",
+  "transport-streamable-http-client-reqwest",
+  "auth",
+  "elicitation",
+  "schemars",
+] }
+
+# protocol: ACP
+agent-client-protocol = { version = "0", features = ["unstable"] }
+
+# runtime/process supervision
+process-wrap = { version = "9.1.0", default-features = false, features = [
+  "tokio1",
+  "process-group",
+] }
+nix = { version = "0.31", default-features = false, features = [
+  "signal",
+  "process",
+] }
+
+# async utilities
+tokio-util = { version = "0.7", features = ["rt", "compat"] }
+async-trait = "0.1"
+async-stream = "0.3"
+
+# local state/cache
+rusqlite = { version = "0.39", features = ["bundled"] }
+
+# paths/files
+directories = "6"
+walkdir = "2"
+globset = "0.4"
+tempfile = "3"
+
+# terminal/output/log cleanup
+strip-ansi-escapes = "0.2"
+
+# crypto-ish basics, useful for token/session IDs and cache keys
+sha2 = "0.11"
+hex = "0.4"
+
+# OpenAPI/docs later
+utoipa = { version = "5", features = ["axum_extras"] }
+utoipa-scalar = { version = "0.3", features = ["axum"] }

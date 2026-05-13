@@ -1,0 +1,23 @@
+[package]
+name = "agent-registry"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "AgentCast registry aggregation for MCP Registry, ACP Registry, and local curated metadata."
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+agent-protocol = { path = "../agent-protocol" }
+
+tokio.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+url.workspace = true
+jiff.workspace = true
+uuid.workspace = true

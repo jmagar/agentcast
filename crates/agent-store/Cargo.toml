@@ -1,0 +1,25 @@
+[package]
+name = "agent-store"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "AgentCast persistence traits, SQLite store implementations, migrations, and local state storage."
+
+[dependencies]
+agent-core = { path = "../agent-core" }
+agent-config = { path = "../agent-config" }
+agent-protocol = { path = "../agent-protocol" }
+
+rusqlite.workspace = true
+directories.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+jiff.workspace = true
+
