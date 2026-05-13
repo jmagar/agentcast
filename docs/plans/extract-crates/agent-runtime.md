@@ -19,7 +19,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -100,10 +100,10 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-runtime/src/health.rs` - runtime status and health snapshots.
 - Create: `crates/agent-runtime/src/registry.rs` - in-memory runtime registry keyed by upstream ID.
 - Create: `crates/agent-runtime/src/supervisor.rs` - local MCP upstream lifecycle supervisor.
-- Add sidecar tests in: `crates/agent-runtime/src/process.rs` (`#[cfg(test)] mod tests`) - process config and redaction tests.
-- Add sidecar tests in: `crates/agent-runtime/src/process.rs` (`#[cfg(test)] mod tests`) - launch/stop tests with fixture commands.
-- Add sidecar tests in: `crates/agent-runtime/src/registry.rs` (`#[cfg(test)] mod tests`) - runtime health registry tests.
-- Add sidecar tests in: `crates/agent-runtime/src/supervisor.rs` (`#[cfg(test)] mod tests`) - upstream lifecycle supervisor tests.
+- Add source-side test sidecars for: `crates/agent-runtime/src/process.rs` - process config and redaction tests.
+- Add source-side test sidecars for: `crates/agent-runtime/src/process.rs` - launch/stop tests with fixture commands.
+- Add source-side test sidecars for: `crates/agent-runtime/src/registry.rs` - runtime health registry tests.
+- Add source-side test sidecars for: `crates/agent-runtime/src/supervisor.rs` - upstream lifecycle supervisor tests.
 
 ## Implementation Tasks
 
@@ -113,7 +113,7 @@ Create or modify these AgentCast files when implementing this plan:
 - Modify: `crates/agent-runtime/src/lib.rs`
 - Create: `crates/agent-runtime/src/process.rs`
 - Create: `crates/agent-runtime/src/error.rs`
-- Test sidecar: `crates/agent-runtime/src/process.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-runtime/src/process.rs`
 
 - [ ] **Step 1: Inspect Lab process ownership boundaries.**
 
@@ -127,7 +127,7 @@ Expected: AgentCast extracts generic process launch/termination and health snaps
 
 - [ ] **Step 2: Write failing process spec tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-runtime/src/process.rs`:
+Create a source-side test sidecar next to `crates/agent-runtime/src/process.rs` with:
 
 ```rust
 use super::*;
@@ -157,7 +157,7 @@ fn redacted_process_spec_hides_env_values() {
 Run:
 
 ```bash
-cargo test -p agent-runtime process_spec
+cargo nextest run -p agent-runtime process_spec
 ```
 
 Expected: FAIL because `ProcessSpec` and `RedactedProcessSpec` do not exist yet.
@@ -269,7 +269,7 @@ impl From<&ProcessSpec> for RedactedProcessSpec {
 Run:
 
 ```bash
-cargo test -p agent-runtime process_spec
+cargo nextest run -p agent-runtime process_spec
 ```
 
 Expected: PASS.
@@ -280,11 +280,11 @@ Expected: PASS.
 - Modify: `crates/agent-runtime/src/lib.rs`
 - Create: `crates/agent-runtime/src/registry.rs`
 - Create: `crates/agent-runtime/src/health.rs`
-- Test sidecar: `crates/agent-runtime/src/registry.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-runtime/src/registry.rs`
 
 - [ ] **Step 1: Write failing registry tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-runtime/src/registry.rs`:
+Create a source-side test sidecar next to `crates/agent-runtime/src/registry.rs` with:
 
 ```rust
 use super::*;
@@ -388,7 +388,7 @@ impl RuntimeRegistry {
 Run:
 
 ```bash
-cargo test -p agent-runtime registry
+cargo nextest run -p agent-runtime registry
 ```
 
 Expected: PASS.
@@ -399,7 +399,7 @@ Expected: PASS.
 - Modify: `crates/agent-runtime/src/lib.rs`
 - Modify: `crates/agent-runtime/src/process.rs`
 - Create: `crates/agent-runtime/src/process_unix.rs`
-- Test sidecar: `crates/agent-runtime/src/process.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-runtime/src/process.rs`
 
 - [ ] **Step 1: Read the minimal process helper sources.**
 
@@ -414,7 +414,7 @@ Expected: AgentCast extracts process-group launch and termination helpers withou
 
 - [ ] **Step 2: Write failing lifecycle test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-runtime/src/process.rs`:
+Create a source-side test sidecar next to `crates/agent-runtime/src/process.rs` with:
 
 ```rust
 use super::*;
@@ -527,7 +527,7 @@ mod process_unix;
 Run:
 
 ```bash
-cargo test -p agent-runtime process_lifecycle
+cargo nextest run -p agent-runtime process_lifecycle
 ```
 
 Expected: PASS and no child process remains running.
@@ -537,11 +537,11 @@ Expected: PASS and no child process remains running.
 **Files:**
 - Create: `crates/agent-runtime/src/supervisor.rs`
 - Modify: `crates/agent-runtime/src/lib.rs`
-- Test sidecar: `crates/agent-runtime/src/supervisor.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-runtime/src/supervisor.rs`
 
 - [ ] **Step 1: Write failing supervisor test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-runtime/src/supervisor.rs`:
+Create a source-side test sidecar next to `crates/agent-runtime/src/supervisor.rs` with:
 
 ```rust
 use super::*;
@@ -636,7 +636,7 @@ impl UpstreamSupervisor {
 Run:
 
 ```bash
-cargo test -p agent-runtime supervisor
+cargo nextest run -p agent-runtime supervisor
 ```
 
 Expected: PASS.
@@ -665,7 +665,7 @@ Expected: the MCP launcher implementation does not add ACP session registry type
 ### Task 6: Verify Full Runtime Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-runtime/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-runtime/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-runtime.md`
 
 - [ ] **Step 1: Run focused runtime tests.**
@@ -673,7 +673,7 @@ Expected: the MCP launcher implementation does not add ACP session registry type
 Run:
 
 ```bash
-cargo test -p agent-runtime
+cargo nextest run -p agent-runtime
 ```
 
 Expected: PASS.

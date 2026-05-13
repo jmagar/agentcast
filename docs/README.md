@@ -13,6 +13,8 @@ related:
   - "docs/ARCH.md"
   - "docs/CLI.md"
   - "docs/CODE_ORGANIZATION.md"
+  - "docs/DEVELOPMENT.md"
+  - "docs/DEV_SPEED.md"
   - "docs/CRATE_BOUNDARIES.md"
   - "docs/ERRORS.md"
   - "docs/INSTALL_PLANS.md"
@@ -22,6 +24,7 @@ related:
   - "docs/OBSERVABILITY.md"
   - "docs/PRINCIPLES.md"
   - "docs/PROTOCOLS.md"
+  - "docs/QUALITY_GATES.md"
   - "docs/ROADMAP.md"
   - "docs/RUNTIME.md"
   - "docs/SCHEMA_UX.md"
@@ -35,7 +38,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -66,7 +69,10 @@ These docs are development contracts. They are not marketing docs. When code and
 15. [PROTOCOLS.md](./PROTOCOLS.md) — ACP/MCP ownership and adapter rules.
 16. [OBSERVABILITY.md](./OBSERVABILITY.md) — local logs/events/audit expectations.
 17. [TESTING.md](./TESTING.md) — verification gates and expectations.
-18. [plans/extract-crates/README.md](./plans/extract-crates/README.md) — how to use Lab as the bootstrap source without importing Lab-specific product gravity.
+18. [DEVELOPMENT.md](./DEVELOPMENT.md) — local development setup and command loop.
+19. [DEV_SPEED.md](./DEV_SPEED.md) — nextest, Cranelift, and fast local workflows.
+20. [QUALITY_GATES.md](./QUALITY_GATES.md) — pre-commit, pre-push, merge, and release gates.
+21. [plans/extract-crates/README.md](./plans/extract-crates/README.md) — how to use Lab as the bootstrap source without importing Lab-specific product gravity.
 
 ## Contracts And Specs
 

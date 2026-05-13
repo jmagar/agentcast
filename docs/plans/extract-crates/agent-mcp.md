@@ -29,7 +29,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -102,9 +102,9 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-mcp/src/stdio.rs` - stdio MCP connection adapter; process spawning is delegated to `agent-runtime`.
 - Create: `crates/agent-mcp/src/metadata.rs` - MCP tool/resource/prompt metadata conversion.
 - Create: `crates/agent-mcp/src/result.rs` - normalized tool call result model.
-- Add sidecar tests in: `crates/agent-mcp/src/metadata.rs` (`#[cfg(test)] mod tests`) - tool metadata conversion tests.
-- Add sidecar tests in: `crates/agent-mcp/src/error.rs` (`#[cfg(test)] mod tests`) - upstream error mapping tests.
-- Add sidecar tests in: `crates/agent-mcp/src/stdio.rs` (`#[cfg(test)] mod tests`) - fixture-backed stdio client tests.
+- Add source-side test sidecars for: `crates/agent-mcp/src/metadata.rs` - tool metadata conversion tests.
+- Add source-side test sidecars for: `crates/agent-mcp/src/error.rs` - upstream error mapping tests.
+- Add source-side test sidecars for: `crates/agent-mcp/src/stdio.rs` - fixture-backed stdio client tests.
 
 ## Implementation Tasks
 
@@ -115,7 +115,7 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-mcp/src/error.rs`
 - Create: `crates/agent-mcp/src/client.rs`
 - Create: `crates/agent-mcp/src/stdio.rs`
-- Test sidecar: `crates/agent-mcp/src/stdio.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-mcp/src/stdio.rs`
 
 - [ ] **Step 1: Inspect Lab's MCP server and upstream boundary.**
 
@@ -129,7 +129,7 @@ Expected: `agent-mcp` owns protocol calls and result normalization; `agent-runti
 
 - [ ] **Step 2: Write failing stdio client tests with a fixture server.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-mcp/src/stdio.rs`:
+Create a source-side test sidecar next to `crates/agent-mcp/src/stdio.rs` with:
 
 ```rust
 use super::*;
@@ -173,7 +173,7 @@ async fn stdio_client_calls_fixture_tool() {
 Run:
 
 ```bash
-cargo test -p agent-mcp stdio_client
+cargo nextest run -p agent-mcp stdio_client
 ```
 
 Expected: FAIL because the stdio wrapper and fixture server do not exist yet.
@@ -365,11 +365,11 @@ Expected: this step creates the public seam; the next execution pass replaces th
 **Files:**
 - Modify: `crates/agent-mcp/src/lib.rs`
 - Create: `crates/agent-mcp/src/metadata.rs`
-- Test sidecar: `crates/agent-mcp/src/metadata.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-mcp/src/metadata.rs`
 
 - [ ] **Step 1: Write failing metadata conversion tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-mcp/src/metadata.rs`:
+Create a source-side test sidecar next to `crates/agent-mcp/src/metadata.rs` with:
 
 ```rust
 use super::*;
@@ -462,7 +462,7 @@ impl McpToolMetadata {
 Run:
 
 ```bash
-cargo test -p agent-mcp metadata
+cargo nextest run -p agent-mcp metadata
 ```
 
 Expected: PASS for raw tool metadata conversion.
@@ -471,7 +471,7 @@ Expected: PASS for raw tool metadata conversion.
 
 **Files:**
 - Create or modify: `crates/agent-mcp/src/error.rs`
-- Test sidecar: `crates/agent-mcp/src/error.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-mcp/src/error.rs`
 
 - [ ] **Step 1: Read Lab MCP error cases.**
 
@@ -486,7 +486,7 @@ Expected: AgentCast preserves stable MCP error kinds and does not mark server he
 
 - [ ] **Step 2: Write failing error mapping tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-mcp/src/error.rs`:
+Create a source-side test sidecar next to `crates/agent-mcp/src/error.rs` with:
 
 ```rust
 use super::*;
@@ -526,7 +526,7 @@ pub fn normalize_tool_error(message: impl Into<String>) -> McpError {
 Run:
 
 ```bash
-cargo test -p agent-mcp error_mapping
+cargo nextest run -p agent-mcp error_mapping
 ```
 
 Expected: PASS for tool-level and connection-level error classification.
@@ -536,7 +536,7 @@ Expected: PASS for tool-level and connection-level error classification.
 **Files:**
 - Modify: `crates/agent-mcp/src/stdio.rs`
 - Modify: `crates/agent-mcp/src/client.rs`
-- Test sidecar: `crates/agent-mcp/src/stdio.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-mcp/src/stdio.rs`
 
 - [ ] **Step 1: Check the installed RMCP API against Lab usage.**
 
@@ -604,7 +604,7 @@ Execution note: use the exact workspace RMCP imports from Step 1. Do not introdu
 Run:
 
 ```bash
-cargo test -p agent-mcp stdio_client
+cargo nextest run -p agent-mcp stdio_client
 ```
 
 Expected: PASS against the fixture MCP server.
@@ -613,14 +613,14 @@ Expected: PASS against the fixture MCP server.
 
 **Files:**
 - Read: `docs/plans/extract-crates/agent-mcp.md`
-- Test sidecar: `crates/agent-mcp/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-mcp/src/*.rs`
 
 - [ ] **Step 1: Run focused MCP tests.**
 
 Run:
 
 ```bash
-cargo test -p agent-mcp
+cargo nextest run -p agent-mcp
 ```
 
 Expected: PASS.

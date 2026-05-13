@@ -14,7 +14,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -177,6 +177,7 @@ Policy:
 - Cranelift is approved for local/dev debug acceleration.
 - release builds and CI release verification should keep the normal production codegen path unless explicitly changed.
 - any repo config for Cranelift must be documented and easy to disable.
+- the opt-in local wrapper is `cargo xtask check-cranelift`.
 
 Reason:
 
@@ -219,3 +220,43 @@ Reason:
 - implementation files stay focused.
 - internal behavior remains testable without widening visibility.
 - source-side sidecars preserve access to private module internals while reducing production-file clutter.
+
+## 0013 — Use cargo xtask for repository automation
+
+AgentCast should expose common repository automation through `cargo xtask`.
+
+Policy:
+
+- `cargo xtask` is the contributor-facing entrypoint for local repository tasks.
+- task implementations should wrap existing checks and scripts rather than duplicating business logic.
+- hook installation remains explicit through `cargo xtask hooks` or `cargo xtask install-hooks`.
+- `cargo xtask ci` is a local push/CI-sized suite: format check, workspace check, clippy, and nextest.
+- `cargo xtask verify` is the broader completion gate and adds `cargo test --workspace`.
+- `cargo xtask audit-docs` and `cargo xtask secrets` are explicit integrity checks for docs and secret leakage.
+- docs refresh and review workflows remain in `scripts/` and are invoked through xtask wrappers.
+
+Reason:
+
+- a Cargo-native task surface is discoverable in a Rust workspace.
+- wrappers keep command spelling stable as underlying tools change.
+- explicit xtasks preserve the project policy that heavy verification is run intentionally, before push, in CI, or on request.
+
+## 0014 — Exclude upstream references from secret scans
+
+Gitleaks should ignore `docs/references/**`.
+
+Policy:
+
+- `.gitleaks.toml` must allowlist `docs/references/**`.
+- authored docs and code remain in scope for secret scanning.
+- upstream reference snapshots must not be rewritten to satisfy local secret-scanner heuristics.
+
+User approval:
+
+> do all 10 of these and yes to gitleaks config - make it ignore docs/references since thats where we got 145 false positives from
+
+Reason:
+
+- `docs/references/**` is a raw upstream/reference corpus.
+- false positives in copied upstream snapshots should not block commits.
+- preserving upstream snapshots matters more than normalizing their contents.

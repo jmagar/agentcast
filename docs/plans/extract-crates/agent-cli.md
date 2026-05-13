@@ -20,7 +20,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -96,9 +96,9 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-cli/src/mcp.rs` - `servers` and `actions` command handlers.
 - Create: `crates/agent-cli/src/registry.rs` - registry search command handler.
 - Create: `crates/agent-cli/src/marketplace.rs` - install-plan preview/apply command handler.
-- Add sidecar tests in: `crates/agent-cli/src/commands.rs` (`#[cfg(test)] mod tests`) - command parsing tests.
-- Add sidecar tests in: `crates/agent-cli/src/output.rs` (`#[cfg(test)] mod tests`) - JSON and human output tests.
-- Add sidecar tests in: `crates/agent-cli/src/error.rs` (`#[cfg(test)] mod tests`) - stable exit code tests.
+- Add source-side test sidecars for: `crates/agent-cli/src/commands.rs` - command parsing tests.
+- Add source-side test sidecars for: `crates/agent-cli/src/output.rs` - JSON and human output tests.
+- Add source-side test sidecars for: `crates/agent-cli/src/error.rs` - stable exit code tests.
 
 ## Implementation Tasks
 
@@ -109,7 +109,7 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-cli/src/commands.rs`
 - Create: `crates/agent-cli/src/error.rs`
 - Create: `crates/agent-cli/src/output.rs`
-- Test sidecar: `crates/agent-cli/src/commands.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-cli/src/commands.rs`
 
 - [ ] **Step 1: Read existing CLI docs.**
 
@@ -124,7 +124,7 @@ Expected: CLI commands map to MCP server config, launcher actions, invocation, r
 
 - [ ] **Step 2: Write failing parse tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-cli/src/commands.rs`:
+Create a source-side test sidecar next to `crates/agent-cli/src/commands.rs` with:
 
 ```rust
 use super::*;
@@ -162,7 +162,7 @@ fn parses_action_call_with_json_params() {
 Run:
 
 ```bash
-cargo test -p agent-cli cli_parse
+cargo nextest run -p agent-cli cli_parse
 ```
 
 Expected: FAIL because the Clap command types do not exist yet.
@@ -316,7 +316,7 @@ impl CliError {
 Run:
 
 ```bash
-cargo test -p agent-cli cli_parse
+cargo nextest run -p agent-cli cli_parse
 ```
 
 Expected: PASS.
@@ -327,7 +327,7 @@ Expected: PASS.
 - Create: `crates/agent-cli/src/mcp.rs`
 - Create: `crates/agent-cli/src/registry.rs`
 - Create: `crates/agent-cli/src/marketplace.rs`
-- Test sidecar: `crates/agent-cli/src/output.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-cli/src/output.rs`
 
 - [ ] **Step 1: Inspect Lab gateway CLI command shape.**
 
@@ -341,7 +341,7 @@ Expected: reusable command grouping and output patterns are identified.
 
 - [ ] **Step 2: Write failing command output tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-cli/src/output.rs`:
+Create a source-side test sidecar next to `crates/agent-cli/src/output.rs` with:
 
 ```rust
 use super::*;
@@ -449,7 +449,7 @@ Expected: handlers compile as thin adapters and are later wired to `agent-runtim
 Run:
 
 ```bash
-cargo test -p agent-cli cli_output
+cargo nextest run -p agent-cli cli_output
 ```
 
 Expected: PASS.
@@ -458,7 +458,7 @@ Expected: PASS.
 
 **Files:**
 - Create or modify: `crates/agent-cli/src/output.rs`
-- Test sidecar: `crates/agent-cli/src/error.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-cli/src/error.rs`
 
 - [ ] **Step 1: Read Lab output behavior.**
 
@@ -472,7 +472,7 @@ Expected: AgentCast CLI output supports stable JSON, human tables, non-TTY behav
 
 - [ ] **Step 2: Write failing exit-code tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-cli/src/error.rs`:
+Create a source-side test sidecar next to `crates/agent-cli/src/error.rs` with:
 
 ```rust
 use super::*;
@@ -494,7 +494,7 @@ fn cli_errors_map_to_stable_exit_codes() {
 Run:
 
 ```bash
-cargo test -p agent-cli exit_codes
+cargo nextest run -p agent-cli exit_codes
 ```
 
 Expected: PASS.
@@ -502,7 +502,7 @@ Expected: PASS.
 ### Task 4: Verify Full CLI Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-cli/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-cli/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-cli.md`
 
 - [ ] **Step 1: Run focused CLI tests.**
@@ -510,7 +510,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cargo test -p agent-cli
+cargo nextest run -p agent-cli
 ```
 
 Expected: PASS.

@@ -23,7 +23,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -104,8 +104,8 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-api/src/routes/actions.rs` - action list/invoke routes.
 - Create: `crates/agent-api/src/routes/registry.rs` - registry search route.
 - Create: `crates/agent-api/src/routes/install.rs` - install-plan preview/apply routes.
-- Add sidecar tests in: `crates/agent-api/src/router.rs` (`#[cfg(test)] mod tests`) - route contract tests against fakes.
-- Add sidecar tests in: `crates/agent-api/src/error.rs` (`#[cfg(test)] mod tests`) - error response tests.
+- Add source-side test sidecars for: `crates/agent-api/src/router.rs` - route contract tests against fakes.
+- Add source-side test sidecars for: `crates/agent-api/src/error.rs` - error response tests.
 
 ## Implementation Tasks
 
@@ -146,12 +146,12 @@ Expected: reusable action-handler and error-envelope patterns are identified bef
 - Create: `crates/agent-api/src/error.rs`
 - Create: `crates/agent-api/src/routes/mod.rs`
 - Create: `crates/agent-api/src/routes/health.rs`
-- Test sidecar: `crates/agent-api/src/router.rs` (`#[cfg(test)] mod tests`)
-- Test sidecar: `crates/agent-api/src/error.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-api/src/router.rs`
+- Test sidecar: `crates/agent-api/src/error.rs`
 
 - [ ] **Step 1: Write failing health route contract test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-api/src/router.rs`:
+Create a source-side test sidecar next to `crates/agent-api/src/router.rs` with:
 
 ```rust
 use super::*;
@@ -173,7 +173,7 @@ async fn health_route_returns_ok() {
 
 - [ ] **Step 2: Write failing error envelope test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-api/src/error.rs`:
+Create a source-side test sidecar next to `crates/agent-api/src/error.rs` with:
 
 ```rust
 use super::*;
@@ -191,7 +191,7 @@ fn error_envelope_uses_stable_kind_string() {
 Run:
 
 ```bash
-cargo test -p agent-api
+cargo nextest run -p agent-api
 ```
 
 Expected: FAIL because the router, state, and error types do not exist yet.
@@ -337,7 +337,7 @@ pub fn build_router(state: ApiState) -> Router {
 Run:
 
 ```bash
-cargo test -p agent-api http_contract error_envelope
+cargo nextest run -p agent-api http_contract error_envelope
 ```
 
 Expected: PASS.
@@ -350,11 +350,11 @@ Expected: PASS.
 - Create: `crates/agent-api/src/routes/install.rs`
 - Modify: `crates/agent-api/src/routes/mod.rs`
 - Modify: `crates/agent-api/src/router.rs`
-- Test sidecar: `crates/agent-api/src/router.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-api/src/router.rs`
 
 - [ ] **Step 1: Write failing action route test.**
 
-Append this case to the `#[cfg(test)] mod tests` sidecar in `crates/agent-api/src/router.rs`:
+Append this case to the source-side test sidecar next to `crates/agent-api/src/router.rs`:
 
 ```rust
 #[tokio::test]
@@ -467,7 +467,7 @@ pub fn build_router(state: ApiState) -> Router {
 Run:
 
 ```bash
-cargo test -p agent-api http_contract
+cargo nextest run -p agent-api http_contract
 ```
 
 Expected: PASS.
@@ -477,7 +477,7 @@ Expected: PASS.
 **Files:**
 - Modify: `crates/agent-api/src/routes/`
 - Modify: `crates/agent-ui-contracts/src/lib.rs`
-- Test sidecar: `crates/agent-api/src/router.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-api/src/router.rs`
 
 - [ ] **Step 1: Check Lab route DTOs before defining AgentCast responses.**
 
@@ -496,7 +496,7 @@ Expected: route-local structs remain local until `apps/web` or `apps/desktop` co
 ### Task 5: Verify Full API Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-api/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-api/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-api.md`
 
 - [ ] **Step 1: Run focused API tests.**
@@ -504,7 +504,7 @@ Expected: route-local structs remain local until `apps/web` or `apps/desktop` co
 Run:
 
 ```bash
-cargo test -p agent-api
+cargo nextest run -p agent-api
 ```
 
 Expected: PASS.

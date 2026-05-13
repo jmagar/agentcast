@@ -18,7 +18,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -96,8 +96,8 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-stash/src/path.rs` - relative path validation.
 - Create: `crates/agent-stash/src/revision.rs` - revision identity and parent tracking.
 - Create: `crates/agent-stash/src/export.rs` - export manifest DTOs.
-- Add sidecar tests in: `crates/agent-stash/src/{meta,path}.rs` (`#[cfg(test)] mod tests`) - metadata and path safety tests.
-- Add sidecar tests in: `crates/agent-stash/src/revision.rs` (`#[cfg(test)] mod tests`) - revision serialization tests.
+- Add source-side test sidecars for: `crates/agent-stash/src/{meta,path}.rs` - metadata and path safety tests.
+- Add source-side test sidecars for: `crates/agent-stash/src/revision.rs` - revision serialization tests.
 
 ## Implementation Tasks
 
@@ -106,7 +106,7 @@ Create or modify these AgentCast files when implementing this plan:
 **Files:**
 - Create: `crates/agent-stash/src/meta.rs`
 - Create: `crates/agent-stash/src/path.rs`
-- Test sidecar: `crates/agent-stash/src/{meta,path}.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-stash/src/{meta,path}.rs`
 
 - [ ] **Step 1: Read Lab stash metadata invariants.**
 
@@ -120,7 +120,7 @@ Expected: AgentCast preserves relative-path validation, metadata round trips, lo
 
 - [ ] **Step 2: Write failing metadata and path tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-stash/src/{meta,path}.rs`:
+Create a source-side test sidecar next to `crates/agent-stash/src/{meta,path}.rs` with:
 
 ```rust
 use super::*;
@@ -214,11 +214,11 @@ pub fn validate_relative_stash_path(path: &str) -> Result<(), StashPathError> {
 - Create: `crates/agent-stash/src/revision.rs`
 - Create: `crates/agent-stash/src/export.rs`
 - Modify: `crates/agent-stash/src/lib.rs`
-- Test sidecar: `crates/agent-stash/src/revision.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-stash/src/revision.rs`
 
 - [ ] **Step 1: Write failing revision test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-stash/src/revision.rs`:
+Create a source-side test sidecar next to `crates/agent-stash/src/revision.rs` with:
 
 ```rust
 use super::*;
@@ -258,7 +258,7 @@ pub struct StashRevision {
 Run:
 
 ```bash
-cargo test -p agent-stash
+cargo nextest run -p agent-stash
 ```
 
 Expected: PASS.
@@ -266,7 +266,7 @@ Expected: PASS.
 ### Task 3: Verify Full Stash Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-stash/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-stash/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-stash.md`
 
 - [ ] **Step 1: Confirm post-v0 isolation.**
@@ -284,7 +284,7 @@ Expected: no output until stash is promoted beyond post-v0.
 Run:
 
 ```bash
-cargo test -p agent-stash
+cargo nextest run -p agent-stash
 ```
 
 Expected: DTO serialization and any storage-adapter tests pass without external services.

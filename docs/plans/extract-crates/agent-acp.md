@@ -25,7 +25,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -129,11 +129,11 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-acp/src/permissions.rs` - permission option and decision conversions.
 - Create: `crates/agent-acp/src/provider.rs` - provider health/model extraction and ACP provider command facade.
 - Create: `crates/agent-acp/src/session.rs` - provider-session command wrapper types.
-- Add sidecar tests in: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs` (`#[cfg(test)] mod tests`) - serialization and conversion tests.
+- Add source-side test sidecars for: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs` - serialization and conversion tests.
 - Add fixture data under: `crates/agent-acp/src/fixtures/` - JSON inputs used by source-side ACP conversion tests.
 - Modify: `crates/agent-protocol/src/lib.rs` - export the ACP protocol-neutral model module.
 - Create: `crates/agent-protocol/src/acp.rs` - AgentCast-owned ACP session, event, content, permission, provider, and model types.
-- Add sidecar tests in: `crates/agent-protocol/src/acp.rs` (`#[cfg(test)] mod tests`) - protocol model serialization tests.
+- Add source-side test sidecars for: `crates/agent-protocol/src/acp.rs` - protocol model serialization tests.
 
 ## Lab Decisions To Preserve
 
@@ -203,7 +203,7 @@ Expected: keep the upstream crate if model preservation is fixed in the installe
 
 - [ ] **Step 1: Write serialization tests for ACP event ownership and raw preservation.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-protocol/src/acp.rs` with tests covering:
+Create a source-side test sidecar next to `crates/agent-protocol/src/acp.rs` with tests covering:
 
 ```rust
 use super::*;
@@ -268,7 +268,7 @@ fn acp_permission_option_uses_stable_kind_strings() {
 Run:
 
 ```bash
-cargo test -p agent-protocol acp_
+cargo nextest run -p agent-protocol acp_
 ```
 
 Expected: tests fail because `agent_protocol::acp` does not exist yet.
@@ -314,7 +314,7 @@ pub mod acp;
 Run:
 
 ```bash
-cargo test -p agent-protocol acp_
+cargo nextest run -p agent-protocol acp_
 ```
 
 Expected: protocol serialization tests pass.
@@ -359,7 +359,7 @@ Expected `crates/agent-acp/src/error.rs` responsibilities:
 Run:
 
 ```bash
-cargo test -p agent-acp
+cargo nextest run -p agent-acp
 ```
 
 Expected: the crate compiles after the generated `add` test is removed or replaced.
@@ -368,7 +368,7 @@ Expected: the crate compiles after the generated `add` test is removed or replac
 
 **Files:**
 - Modify: `crates/agent-acp/src/content.rs`
-- Test sidecar: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs`
 - Source: `../lab/crates/lab/src/acp/runtime.rs`
 - Source: `../lab/crates/lab/src/dispatch/acp/params.rs`
 
@@ -404,7 +404,7 @@ Rename/generalize:
 Run:
 
 ```bash
-cargo test -p agent-acp attachment
+cargo nextest run -p agent-acp attachment
 ```
 
 Expected: conversion tests pass without launching a provider process.
@@ -413,7 +413,7 @@ Expected: conversion tests pass without launching a provider process.
 
 **Files:**
 - Modify: `crates/agent-acp/src/permissions.rs`
-- Test sidecar: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs`
 - Source: `../lab/crates/lab/src/acp/runtime.rs`
 
 - [ ] **Step 1: Write tests for permission option conversion.**
@@ -435,7 +435,7 @@ Keep conversion behavior from Lab's `acp_permission_option_from_protocol`, but r
 Run:
 
 ```bash
-cargo test -p agent-acp permission
+cargo nextest run -p agent-acp permission
 ```
 
 Expected: permission conversion tests pass.
@@ -444,7 +444,7 @@ Expected: permission conversion tests pass.
 
 **Files:**
 - Modify: `crates/agent-acp/src/events.rs`
-- Test sidecar: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs`
 - Source: `../lab/crates/lab/src/acp/runtime.rs`
 - Source: `../lab/crates/lab-apis/src/acp/types.rs`
 
@@ -481,7 +481,7 @@ Change:
 Run:
 
 ```bash
-cargo test -p agent-acp event
+cargo nextest run -p agent-acp event
 ```
 
 Expected: normalization tests pass without Codex, Node.js, or subprocess fixtures.
@@ -490,7 +490,7 @@ Expected: normalization tests pass without Codex, Node.js, or subprocess fixture
 
 **Files:**
 - Modify: `crates/agent-acp/src/provider.rs`
-- Test sidecar: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs`
 - Source: `../lab/crates/lab/src/acp/runtime.rs`
 - Source: `../lab/crates/lab/src/acp/providers.rs`
 
@@ -529,7 +529,7 @@ Provider file I/O and install storage stay outside `agent-acp`.
 Run:
 
 ```bash
-cargo test -p agent-acp provider
+cargo nextest run -p agent-acp provider
 ```
 
 Expected: provider metadata tests pass.
@@ -538,7 +538,7 @@ Expected: provider metadata tests pass.
 
 **Files:**
 - Modify: `crates/agent-acp/src/session.rs`
-- Test sidecar: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-acp/src/{content,events,permissions,provider,session}.rs`
 - Source: `../lab/crates/lab-apis/src/acp/session.rs`
 - Source: `../lab/crates/lab/src/acp/runtime.rs`
 
@@ -572,7 +572,7 @@ Do not include:
 Run:
 
 ```bash
-cargo test -p agent-acp session
+cargo nextest run -p agent-acp session
 ```
 
 Expected: session facade tests pass without external processes.
@@ -623,9 +623,9 @@ Expected `agent-registry` and `agent-marketplace` own:
 Run these commands after implementation:
 
 ```bash
-cargo test -p agent-protocol acp_
-cargo test -p agent-acp
-cargo test -p agent-runtime acp
+cargo nextest run -p agent-protocol acp_
+cargo nextest run -p agent-acp
+cargo nextest run -p agent-runtime acp
 ```
 
 Expected: `agent-protocol` and `agent-acp` tests pass; `agent-runtime acp` is required only once runtime-owned ACP session work starts.

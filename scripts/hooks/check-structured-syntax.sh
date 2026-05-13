@@ -47,7 +47,12 @@ while IFS= read -r -d '' file; do
     *) continue ;;
   esac
 
-  tmp="$(mktemp)"
+  case "$file" in
+    *.json) tmp="$(mktemp --suffix=.json)" ;;
+    *.toml) tmp="$(mktemp --suffix=.toml)" ;;
+    *.yaml) tmp="$(mktemp --suffix=.yaml)" ;;
+    *.yml) tmp="$(mktemp --suffix=.yml)" ;;
+  esac
   trap 'rm -f "$tmp"' RETURN
   git show ":$file" > "$tmp"
 

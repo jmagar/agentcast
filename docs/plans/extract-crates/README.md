@@ -70,7 +70,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -184,7 +184,7 @@ Extraction is not copying blindly. The output must match AgentCast crate boundar
 
 ## Test Placement Rule
 
-Use source-side unit tests for these extraction plans. Put tests in the relevant `src/*.rs` module under `#[cfg(test)] mod tests` so private/internal functions can be tested without widening the public API. Do not create `crates/*/tests/` integration-test files for crate-internal behavior; reserve integration tests only for explicit cross-crate public contracts.
+Use source-side unit tests for these extraction plans. Implementation files may declare `#[cfg(test)] mod tests;` when needed, but test bodies belong in source-side sidecar files such as `src/foo/tests.rs`, `src/foo_test.rs`, or `src/foo/tests/*.rs`. Do not create `crates/*/tests/` integration-test files for crate-internal behavior; reserve integration tests only for explicit cross-crate public contracts.
 
 ## Work Plan
 
@@ -256,7 +256,7 @@ Expected: stale or missing live source is resolved against the captured repopack
 Run:
 
 ```bash
-cargo test -p agent-acp
+cargo nextest run -p agent-acp
 ```
 
 Expected: the new behavior fails before implementation or the existing placeholder crate confirms no matching tests exist yet.
@@ -270,7 +270,7 @@ Expected: implementation uses AgentCast names, error types, and crate dependenci
 Run:
 
 ```bash
-cargo test -p agent-acp
+cargo nextest run -p agent-acp
 ```
 
 Expected: focused tests pass.

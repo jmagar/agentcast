@@ -22,7 +22,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -102,8 +102,8 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-ui-contracts/src/marketplace.rs` - install preview view DTOs.
 - Create: `crates/agent-ui-contracts/src/registry.rs` - registry result view DTOs.
 - Create: `crates/agent-ui-contracts/src/invocation.rs` - invocation result/error view DTOs.
-- Add sidecar tests in: `crates/agent-ui-contracts/src/{gateway,marketplace,registry,invocation}.rs` (`#[cfg(test)] mod tests`) - JSON sidecar contract tests.
-- Add sidecar tests in: `crates/agent-ui-contracts/src/lib.rs` (`#[cfg(test)] mod tests`) - protocol reuse boundary tests.
+- Add source-side test sidecars for: `crates/agent-ui-contracts/src/{gateway,marketplace,registry,invocation}.rs` - JSON sidecar contract tests.
+- Add source-side test sidecars for: `crates/agent-ui-contracts/src/lib.rs` - protocol reuse boundary tests.
 
 ## Implementation Tasks
 
@@ -112,7 +112,7 @@ Create or modify these AgentCast files when implementing this plan:
 **Files:**
 - Create: `crates/agent-ui-contracts/src/gateway.rs`
 - Create: `crates/agent-ui-contracts/src/marketplace.rs`
-- Test sidecar: `crates/agent-ui-contracts/src/{gateway,marketplace,registry,invocation}.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-ui-contracts/src/{gateway,marketplace,registry,invocation}.rs`
 
 - [ ] **Step 1: Compare Rust route DTOs and TS client expectations.**
 
@@ -126,7 +126,7 @@ Expected: shared JSON DTOs are stable, display-focused, and do not duplicate pro
 
 - [ ] **Step 2: Write failing serialization tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-ui-contracts/src/{gateway,marketplace,registry,invocation}.rs`:
+Create a source-side test sidecar next to `crates/agent-ui-contracts/src/{gateway,marketplace,registry,invocation}.rs` with:
 
 ```rust
 use super::*;
@@ -252,7 +252,7 @@ pub struct InvocationErrorView {
 
 - [ ] **Step 1: Write protocol reuse boundary test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-ui-contracts/src/lib.rs`:
+Create a source-side test sidecar next to `crates/agent-ui-contracts/src/lib.rs` with:
 
 ```rust
 #[test]
@@ -269,7 +269,7 @@ fn ui_contracts_do_not_define_protocol_runtime_clients() {
 Run:
 
 ```bash
-cargo test -p agent-ui-contracts protocol_reuse
+cargo nextest run -p agent-ui-contracts protocol_reuse
 ```
 
 Expected: PASS.
@@ -277,7 +277,7 @@ Expected: PASS.
 ### Task 3: Verify Full UI Contracts Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-ui-contracts/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-ui-contracts/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-ui-contracts.md`
 
 - [ ] **Step 1: Run focused UI contract tests.**
@@ -285,7 +285,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cargo test -p agent-ui-contracts
+cargo nextest run -p agent-ui-contracts
 ```
 
 Expected: DTO serialization tests pass without frontend build tooling.

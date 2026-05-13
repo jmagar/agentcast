@@ -1,0 +1,7 @@
+title = "AgentCast gitleaks config"
+
+[allowlist]
+description = "Ignore upstream/reference corpora that are used as provenance snapshots."
+paths = [
+  '''^docs/references/''',
+]

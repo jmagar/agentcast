@@ -19,7 +19,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -97,9 +97,9 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-observability/src/redaction.rs` - secret-like key/value redaction helpers.
 - Create: `crates/agent-observability/src/activity.rs` - structured activity event DTOs.
 - Create: `crates/agent-observability/src/health.rs` - health snapshot DTOs.
-- Add sidecar tests in: `crates/agent-observability/src/redaction.rs` (`#[cfg(test)] mod tests`) - redaction tests.
-- Add sidecar tests in: `crates/agent-observability/src/activity.rs` (`#[cfg(test)] mod tests`) - activity event serialization tests.
-- Add sidecar tests in: `crates/agent-observability/src/health.rs` (`#[cfg(test)] mod tests`) - health DTO tests.
+- Add source-side test sidecars for: `crates/agent-observability/src/redaction.rs` - redaction tests.
+- Add source-side test sidecars for: `crates/agent-observability/src/activity.rs` - activity event serialization tests.
+- Add source-side test sidecars for: `crates/agent-observability/src/health.rs` - health DTO tests.
 
 ## Implementation Tasks
 
@@ -108,7 +108,7 @@ Create or modify these AgentCast files when implementing this plan:
 **Files:**
 - Create: `crates/agent-observability/src/activity.rs`
 - Create: `crates/agent-observability/src/redaction.rs`
-- Test sidecar: `crates/agent-observability/src/activity.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-observability/src/activity.rs`
 
 - [ ] **Step 1: Read Lab activity and formatter sources.**
 
@@ -123,7 +123,7 @@ Expected: AgentCast keeps event DTOs independent from terminal/log formatting.
 
 - [ ] **Step 2: Write failing activity event tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-observability/src/activity.rs`:
+Create a source-side test sidecar next to `crates/agent-observability/src/activity.rs` with:
 
 ```rust
 use super::*;
@@ -189,11 +189,11 @@ pub enum ActivityKind {
 
 **Files:**
 - Create: `crates/agent-observability/src/redaction.rs`
-- Test sidecar: `crates/agent-observability/src/redaction.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-observability/src/redaction.rs`
 
 - [ ] **Step 1: Write failing redaction tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-observability/src/redaction.rs`:
+Create a source-side test sidecar next to `crates/agent-observability/src/redaction.rs` with:
 
 ```rust
 use super::*;
@@ -251,7 +251,7 @@ pub fn redact_env<'a>(
 Run:
 
 ```bash
-cargo test -p agent-observability redaction
+cargo nextest run -p agent-observability redaction
 ```
 
 Expected: PASS.
@@ -261,11 +261,11 @@ Expected: PASS.
 **Files:**
 - Create: `crates/agent-observability/src/health.rs`
 - Create: `crates/agent-observability/src/tracing.rs`
-- Test sidecar: `crates/agent-observability/src/health.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-observability/src/health.rs`
 
 - [ ] **Step 1: Write failing health DTO tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-observability/src/health.rs`:
+Create a source-side test sidecar next to `crates/agent-observability/src/health.rs` with:
 
 ```rust
 use super::*;
@@ -321,7 +321,7 @@ pub fn init_tracing() {
 Run:
 
 ```bash
-cargo test -p agent-observability health
+cargo nextest run -p agent-observability health
 ```
 
 Expected: PASS.
@@ -329,7 +329,7 @@ Expected: PASS.
 ### Task 4: Verify Full Observability Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-observability/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-observability/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-observability.md`
 
 - [ ] **Step 1: Run focused observability tests.**
@@ -337,7 +337,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cargo test -p agent-observability
+cargo nextest run -p agent-observability
 ```
 
 Expected: all redaction, audit DTO, and health DTO tests pass without launching external services.

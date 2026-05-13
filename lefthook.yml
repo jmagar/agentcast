@@ -15,11 +15,9 @@ pre-commit:
 pre-push:
   parallel: false
   commands:
-    fmt:
-      run: cargo fmt --all -- --check
-    check:
-      run: cargo check --workspace
-    test:
-      run: cargo test --workspace
-    clippy:
-      run: cargo clippy --workspace --all-targets -- -D warnings
+    ci:
+      run: cargo xtask ci
+    audit-docs:
+      run: cargo xtask audit-docs
+    secrets:
+      run: cargo xtask secrets

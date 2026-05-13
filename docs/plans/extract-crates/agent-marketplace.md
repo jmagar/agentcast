@@ -20,7 +20,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -101,9 +101,9 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-marketplace/src/conflict.rs` - conflict detection models.
 - Create: `crates/agent-marketplace/src/mcp.rs` - MCP Registry package to AgentCast config mutation planner.
 - Create: `crates/agent-marketplace/src/mcp_params.rs` - MCP install safety validation.
-- Add sidecar tests in: `crates/agent-marketplace/src/plan.rs` (`#[cfg(test)] mod tests`) - plan and conflict tests.
-- Add sidecar tests in: `crates/agent-marketplace/src/mcp.rs` (`#[cfg(test)] mod tests`) - MCP registry to plan tests.
-- Add sidecar tests in: `crates/agent-marketplace/src/mcp_params.rs` (`#[cfg(test)] mod tests`) - unsafe runtime/env/URL rejection tests.
+- Add source-side test sidecars for: `crates/agent-marketplace/src/plan.rs` - plan and conflict tests.
+- Add source-side test sidecars for: `crates/agent-marketplace/src/mcp.rs` - MCP registry to plan tests.
+- Add source-side test sidecars for: `crates/agent-marketplace/src/mcp_params.rs` - unsafe runtime/env/URL rejection tests.
 
 ## Implementation Tasks
 
@@ -114,7 +114,7 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-marketplace/src/error.rs`
 - Create: `crates/agent-marketplace/src/plan.rs`
 - Create: `crates/agent-marketplace/src/conflict.rs`
-- Test sidecar: `crates/agent-marketplace/src/plan.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-marketplace/src/plan.rs`
 
 - [ ] **Step 1: Inspect Lab marketplace diff behavior.**
 
@@ -128,7 +128,7 @@ Expected: reusable preview and conflict patterns are identified.
 
 - [ ] **Step 2: Write failing install-plan tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-marketplace/src/plan.rs`:
+Create a source-side test sidecar next to `crates/agent-marketplace/src/plan.rs` with:
 
 ```rust
 use super::*;
@@ -158,7 +158,7 @@ fn empty_plan_has_no_apply_steps() {
 Run:
 
 ```bash
-cargo test -p agent-marketplace install_plan
+cargo nextest run -p agent-marketplace install_plan
 ```
 
 Expected: FAIL because install-plan types do not exist yet.
@@ -275,7 +275,7 @@ pub enum InstallStepKind {
 Run:
 
 ```bash
-cargo test -p agent-marketplace install_plan
+cargo nextest run -p agent-marketplace install_plan
 ```
 
 Expected: PASS.
@@ -284,11 +284,11 @@ Expected: PASS.
 
 **Files:**
 - Create: `crates/agent-marketplace/src/mcp.rs`
-- Test sidecar: `crates/agent-marketplace/src/mcp.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-marketplace/src/mcp.rs`
 
 - [ ] **Step 1: Write failing MCP plan tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-marketplace/src/mcp.rs`:
+Create a source-side test sidecar next to `crates/agent-marketplace/src/mcp.rs` with:
 
 ```rust
 use super::*;
@@ -365,7 +365,7 @@ pub fn plan_mcp_server_install(server: &NormalizedMcpServer) -> MarketplaceResul
 Run:
 
 ```bash
-cargo test -p agent-marketplace mcp_plan
+cargo nextest run -p agent-marketplace mcp_plan
 ```
 
 Expected: PASS.
@@ -375,7 +375,7 @@ Expected: PASS.
 **Files:**
 - Create: `crates/agent-marketplace/src/mcp_params.rs`
 - Modify: `crates/agent-marketplace/src/lib.rs`
-- Test sidecar: `crates/agent-marketplace/src/mcp_params.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-marketplace/src/mcp_params.rs`
 
 - [ ] **Step 1: Read Lab install safety tests.**
 
@@ -389,7 +389,7 @@ Expected: AgentCast rejects unsafe runtime hints, dangerous arguments, protected
 
 - [ ] **Step 2: Write failing safety tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-marketplace/src/mcp_params.rs`:
+Create a source-side test sidecar next to `crates/agent-marketplace/src/mcp_params.rs` with:
 
 ```rust
 use super::*;
@@ -469,7 +469,7 @@ pub fn validate_env_value(value: &str) -> MarketplaceResult<()> {
 Run:
 
 ```bash
-cargo test -p agent-marketplace mcp_install_safety
+cargo nextest run -p agent-marketplace mcp_install_safety
 ```
 
 Expected: PASS.
@@ -477,7 +477,7 @@ Expected: PASS.
 ### Task 4: Verify Full Marketplace Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-marketplace/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-marketplace/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-marketplace.md`
 
 - [ ] **Step 1: Run focused marketplace tests.**
@@ -485,7 +485,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cargo test -p agent-marketplace
+cargo nextest run -p agent-marketplace
 ```
 
 Expected: PASS.

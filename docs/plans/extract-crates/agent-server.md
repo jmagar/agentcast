@@ -19,7 +19,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -89,9 +89,9 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-server/src/lib.rs` if the crate needs testable composition helpers.
 - Create: `crates/agent-server/src/startup.rs` - startup composition helpers for config/logging/runtime handles.
 - Create: `crates/agent-server/src/serve.rs` - optional HTTP bind/shutdown wiring.
-- Add sidecar tests in: `crates/agent-server/src/startup.rs` (`#[cfg(test)] mod tests`) - top-level CLI dispatch tests.
-- Add sidecar tests in: `crates/agent-server/src/serve.rs` (`#[cfg(test)] mod tests`) - HTTP serve wiring tests.
-- Add sidecar tests in: `crates/agent-server/src/startup.rs` (`#[cfg(test)] mod tests`) - thin-startup boundary tests.
+- Add source-side test sidecars for: `crates/agent-server/src/startup.rs` - top-level CLI dispatch tests.
+- Add source-side test sidecars for: `crates/agent-server/src/serve.rs` - HTTP serve wiring tests.
+- Add source-side test sidecars for: `crates/agent-server/src/startup.rs` - thin-startup boundary tests.
 
 ## Implementation Tasks
 
@@ -101,7 +101,7 @@ Create or modify these AgentCast files when implementing this plan:
 - Modify: `crates/agent-server/src/main.rs`
 - Create: `crates/agent-server/src/lib.rs`
 - Create: `crates/agent-server/src/startup.rs`
-- Test sidecar: `crates/agent-server/src/startup.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-server/src/startup.rs`
 
 - [ ] **Step 1: Inspect Lab binary composition.**
 
@@ -116,7 +116,7 @@ Expected: reusable startup and dispatch patterns are identified.
 
 - [ ] **Step 2: Write failing CLI composition test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-server/src/startup.rs`:
+Create a source-side test sidecar next to `crates/agent-server/src/startup.rs` with:
 
 ```rust
 use super::*;
@@ -177,7 +177,7 @@ async fn main() -> anyhow::Result<()> {
 Run:
 
 ```bash
-cargo test -p agent-server server_cli
+cargo nextest run -p agent-server server_cli
 ```
 
 Expected: PASS once `agent-cli` exposes the version path expected by the test.
@@ -188,7 +188,7 @@ Expected: PASS once `agent-cli` exposes the version path expected by the test.
 - Modify: `crates/agent-server/src/main.rs`
 - Create: `crates/agent-server/src/serve.rs`
 - Modify: `crates/agent-server/src/lib.rs`
-- Test sidecar: `crates/agent-server/src/serve.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-server/src/serve.rs`
 
 - [ ] **Step 1: Inspect Lab serve command.**
 
@@ -202,7 +202,7 @@ Expected: reusable bind/shutdown/logging patterns are identified.
 
 - [ ] **Step 2: Write failing serve options test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-server/src/serve.rs`:
+Create a source-side test sidecar next to `crates/agent-server/src/serve.rs` with:
 
 ```rust
 use super::*;
@@ -258,7 +258,7 @@ pub async fn serve_http(options: ServeOptions, state: ApiState) -> anyhow::Resul
 Run:
 
 ```bash
-cargo test -p agent-server server_serve
+cargo nextest run -p agent-server server_serve
 ```
 
 Expected: PASS.
@@ -267,7 +267,7 @@ Expected: PASS.
 
 **Files:**
 - Modify: `crates/agent-server/src/main.rs`
-- Test sidecar: `crates/agent-server/src/startup.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-server/src/startup.rs`
 
 - [ ] **Step 1: Verify composition stays in the binary crate.**
 
@@ -282,7 +282,7 @@ Expected: `agent-server` wires crates together without owning config parsing, ro
 
 - [ ] **Step 2: Write boundary test for startup module size.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-server/src/startup.rs`:
+Create a source-side test sidecar next to `crates/agent-server/src/startup.rs` with:
 
 ```rust
 #[test]
@@ -299,7 +299,7 @@ fn server_entrypoint_does_not_define_domain_models() {
 Run:
 
 ```bash
-cargo test -p agent-server server_composition
+cargo nextest run -p agent-server server_composition
 ```
 
 Expected: PASS.
@@ -307,7 +307,7 @@ Expected: PASS.
 ### Task 4: Verify Full Server Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-server/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-server/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-server.md`
 
 - [ ] **Step 1: Run focused server tests.**
@@ -315,7 +315,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cargo test -p agent-server
+cargo nextest run -p agent-server
 ```
 
 Expected: PASS.

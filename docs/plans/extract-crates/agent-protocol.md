@@ -25,7 +25,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -97,9 +97,9 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-protocol/src/registry.rs` - normalized registry DTOs shared by registry and UI/API.
 - Create: `crates/agent-protocol/src/install.rs` - install-plan DTOs shared with marketplace/API/CLI.
 - Create: `crates/agent-protocol/src/acp.rs` - post-v0 ACP protocol-neutral DTOs.
-- Add sidecar tests in: `crates/agent-protocol/src/launcher.rs` (`#[cfg(test)] mod tests`) - launcher serialization tests.
-- Add sidecar tests in: `crates/agent-protocol/src/{registry,install}.rs` (`#[cfg(test)] mod tests`) - registry DTO tests.
-- Add sidecar tests in: `crates/agent-protocol/src/acp.rs` (`#[cfg(test)] mod tests`) - ACP model tests required by `agent-acp`.
+- Add source-side test sidecars for: `crates/agent-protocol/src/launcher.rs` - launcher serialization tests.
+- Add source-side test sidecars for: `crates/agent-protocol/src/{registry,install}.rs` - registry DTO tests.
+- Add source-side test sidecars for: `crates/agent-protocol/src/acp.rs` - ACP model tests required by `agent-acp`.
 
 ## Implementation Tasks
 
@@ -109,11 +109,11 @@ Create or modify these AgentCast files when implementing this plan:
 - Modify: `crates/agent-protocol/src/lib.rs`
 - Create: `crates/agent-protocol/src/launcher.rs`
 - Create: `crates/agent-protocol/src/mcp.rs`
-- Test sidecar: `crates/agent-protocol/src/launcher.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-protocol/src/launcher.rs`
 
 - [ ] **Step 1: Write failing serialization tests for launcher action IDs.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-protocol/src/launcher.rs`:
+Create a source-side test sidecar next to `crates/agent-protocol/src/launcher.rs` with:
 
 ```rust
 use super::*;
@@ -149,7 +149,7 @@ fn invocation_request_keeps_raw_params() {
 Run:
 
 ```bash
-cargo test -p agent-protocol launcher
+cargo nextest run -p agent-protocol launcher
 ```
 
 Expected: FAIL because launcher models do not exist yet.
@@ -226,7 +226,7 @@ pub struct McpUpstreamSummary {
 Run:
 
 ```bash
-cargo test -p agent-protocol launcher
+cargo nextest run -p agent-protocol launcher
 ```
 
 Expected: PASS.
@@ -237,11 +237,11 @@ Expected: PASS.
 - Create: `crates/agent-protocol/src/registry.rs`
 - Create: `crates/agent-protocol/src/install.rs`
 - Modify: `crates/agent-protocol/src/lib.rs`
-- Test sidecar: `crates/agent-protocol/src/{registry,install}.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-protocol/src/{registry,install}.rs`
 
 - [ ] **Step 1: Write failing registry/install DTO tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-protocol/src/{registry,install}.rs`:
+Create a source-side test sidecar next to `crates/agent-protocol/src/{registry,install}.rs` with:
 
 ```rust
 use super::*;
@@ -324,7 +324,7 @@ pub struct InstallStepDto {
 Run:
 
 ```bash
-cargo test -p agent-protocol registry
+cargo nextest run -p agent-protocol registry
 ```
 
 Expected: PASS.
@@ -333,7 +333,7 @@ Expected: PASS.
 
 **Files:**
 - Create: `crates/agent-protocol/src/acp.rs`
-- Test sidecar: `crates/agent-protocol/src/acp.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-protocol/src/acp.rs`
 
 - [ ] **Step 1: Follow the ACP model task in `agent-acp.md`.**
 
@@ -347,7 +347,7 @@ Expected: ACP event, session, provider, permission, and content model requiremen
 
 - [ ] **Step 2: Write ACP protocol tests from the ACP extraction plan.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-protocol/src/acp.rs` using the tests shown in `docs/plans/extract-crates/agent-acp.md` Task 2. The required assertions are:
+Create a source-side test sidecar next to `crates/agent-protocol/src/acp.rs` using the tests shown in `docs/plans/extract-crates/agent-acp.md` Task 2. The required assertions are:
 
 ```rust
 use super::*;
@@ -416,7 +416,7 @@ pub struct AcpPermissionOption {
 Run:
 
 ```bash
-cargo test -p agent-protocol acp_types
+cargo nextest run -p agent-protocol acp_types
 ```
 
 Expected: PASS.
@@ -444,7 +444,7 @@ Expected: no output.
 ### Task 5: Verify Full Protocol Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-protocol/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-protocol/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-protocol.md`
 
 - [ ] **Step 1: Verify protocol crate.**
@@ -452,7 +452,7 @@ Expected: no output.
 Run:
 
 ```bash
-cargo test -p agent-protocol
+cargo nextest run -p agent-protocol
 ```
 
 Expected: protocol tests pass.

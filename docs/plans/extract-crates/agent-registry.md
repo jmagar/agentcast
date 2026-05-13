@@ -18,7 +18,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -88,9 +88,9 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-registry/src/client.rs` - HTTP client wrapper with base URL and timeout.
 - Create: `crates/agent-registry/src/cache.rs` - cache trait and in-memory cache implementation.
 - Create: `crates/agent-registry/src/search.rs` - deterministic fixture-friendly search helpers.
-- Add sidecar tests in: `crates/agent-registry/src/mcp.rs` (`#[cfg(test)] mod tests`) - DTO normalization tests.
-- Add sidecar tests in: `crates/agent-registry/src/search.rs` (`#[cfg(test)] mod tests`) - local search tests.
-- Add sidecar tests in: `crates/agent-registry/src/cache.rs` (`#[cfg(test)] mod tests`) - cache ownership tests.
+- Add source-side test sidecars for: `crates/agent-registry/src/mcp.rs` - DTO normalization tests.
+- Add source-side test sidecars for: `crates/agent-registry/src/search.rs` - local search tests.
+- Add source-side test sidecars for: `crates/agent-registry/src/cache.rs` - cache ownership tests.
 
 ## Implementation Tasks
 
@@ -101,7 +101,7 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-registry/src/mcp.rs`
 - Create: `crates/agent-registry/src/client.rs`
 - Create: `crates/agent-registry/src/error.rs`
-- Test sidecar: `crates/agent-registry/src/mcp.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-registry/src/mcp.rs`
 
 - [ ] **Step 1: Inspect Lab MCP registry models.**
 
@@ -115,7 +115,7 @@ Expected: reusable response shapes and normalization needs are identified.
 
 - [ ] **Step 2: Add a registry fixture constant to the sidecar tests.**
 
-Add this fixture constant inside the `#[cfg(test)] mod tests` sidecar in `crates/agent-registry/src/mcp.rs`:
+Add this fixture constant inside the source-side test sidecar next to `crates/agent-registry/src/mcp.rs`:
 
 ```rust
 const MCP_REGISTRY_SERVERS_FIXTURE: &str = r#"{
@@ -136,7 +136,7 @@ const MCP_REGISTRY_SERVERS_FIXTURE: &str = r#"{
 
 - [ ] **Step 3: Write failing registry normalization tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-registry/src/mcp.rs`:
+Create a source-side test sidecar next to `crates/agent-registry/src/mcp.rs` with:
 
 ```rust
 use super::*;
@@ -168,7 +168,7 @@ fn normalized_server_has_stable_cache_key() {
 Run:
 
 ```bash
-cargo test -p agent-registry mcp_registry
+cargo nextest run -p agent-registry mcp_registry
 ```
 
 Expected: FAIL because registry DTOs and normalized models do not exist yet.
@@ -357,7 +357,7 @@ impl McpRegistryClient {
 Run:
 
 ```bash
-cargo test -p agent-registry mcp_registry
+cargo nextest run -p agent-registry mcp_registry
 ```
 
 Expected: PASS.
@@ -367,11 +367,11 @@ Expected: PASS.
 **Files:**
 - Create: `crates/agent-registry/src/cache.rs`
 - Create: `crates/agent-registry/src/search.rs`
-- Test sidecar: `crates/agent-registry/src/search.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-registry/src/search.rs`
 
 - [ ] **Step 1: Write failing search tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-registry/src/search.rs`:
+Create a source-side test sidecar next to `crates/agent-registry/src/search.rs` with:
 
 ```rust
 use super::*;
@@ -487,7 +487,7 @@ impl RegistryCache for InMemoryRegistryCache {
 Run:
 
 ```bash
-cargo test -p agent-registry search
+cargo nextest run -p agent-registry search
 ```
 
 Expected: PASS.
@@ -497,7 +497,7 @@ Expected: PASS.
 **Files:**
 - Modify: `crates/agent-registry/src/cache.rs`
 - Modify: `crates/agent-store/src/lib.rs`
-- Test sidecar: `crates/agent-registry/src/cache.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-registry/src/cache.rs`
 
 - [ ] **Step 1: Read Lab registry store boundaries.**
 
@@ -511,7 +511,7 @@ Expected: `agent-registry` owns registry semantics; `agent-store` owns SQLite me
 
 - [ ] **Step 2: Write failing cache tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-registry/src/cache.rs`:
+Create a source-side test sidecar next to `crates/agent-registry/src/cache.rs` with:
 
 ```rust
 use super::*;
@@ -537,7 +537,7 @@ fn cache_round_trips_normalized_server_by_cache_key() {
 Run:
 
 ```bash
-cargo test -p agent-registry cache
+cargo nextest run -p agent-registry cache
 ```
 
 Expected: PASS.
@@ -545,7 +545,7 @@ Expected: PASS.
 ### Task 4: Verify Full Registry Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-registry/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-registry/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-registry.md`
 
 - [ ] **Step 1: Run focused registry tests.**
@@ -553,7 +553,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cargo test -p agent-registry
+cargo nextest run -p agent-registry
 ```
 
 Expected: PASS.

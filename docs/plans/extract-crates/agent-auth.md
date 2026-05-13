@@ -18,7 +18,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -92,9 +92,9 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-auth/src/error.rs` - auth error type and stable kind strings.
 - Create: `crates/agent-auth/src/bearer.rs` - bearer-token validation and Axum extraction helpers.
 - Create: `crates/agent-auth/src/metadata.rs` - auth metadata DTOs without Google/Lab policy.
-- Add sidecar tests in: `crates/agent-auth/src/context.rs` (`#[cfg(test)] mod tests`) - identity propagation tests.
-- Add sidecar tests in: `crates/agent-auth/src/bearer.rs` (`#[cfg(test)] mod tests`) - bearer validator tests.
-- Add sidecar tests in: `crates/agent-auth/src/metadata.rs` (`#[cfg(test)] mod tests`) - OAuth/auth metadata serialization tests.
+- Add source-side test sidecars for: `crates/agent-auth/src/context.rs` - identity propagation tests.
+- Add source-side test sidecars for: `crates/agent-auth/src/bearer.rs` - bearer validator tests.
+- Add source-side test sidecars for: `crates/agent-auth/src/metadata.rs` - OAuth/auth metadata serialization tests.
 
 ## Implementation Tasks
 
@@ -104,11 +104,11 @@ Create or modify these AgentCast files when implementing this plan:
 - Modify: `crates/agent-auth/src/lib.rs`
 - Create: `crates/agent-auth/src/context.rs`
 - Create: `crates/agent-auth/src/error.rs`
-- Test sidecar: `crates/agent-auth/src/context.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-auth/src/context.rs`
 
 - [ ] **Step 1: Write failing tests for principal propagation.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-auth/src/context.rs`:
+Create a source-side test sidecar next to `crates/agent-auth/src/context.rs` with:
 
 ```rust
 use super::*;
@@ -134,7 +134,7 @@ fn anonymous_context_has_stable_principal() {
 Run:
 
 ```bash
-cargo test -p agent-auth context
+cargo nextest run -p agent-auth context
 ```
 
 Expected: FAIL because `AuthContext` does not exist yet.
@@ -228,7 +228,7 @@ impl AuthContext {
 Run:
 
 ```bash
-cargo test -p agent-auth context
+cargo nextest run -p agent-auth context
 ```
 
 Expected: PASS.
@@ -238,7 +238,7 @@ Expected: PASS.
 
 **Files:**
 - Create: `crates/agent-auth/src/bearer.rs`
-- Test sidecar: `crates/agent-auth/src/bearer.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-auth/src/bearer.rs`
 
 - [ ] **Step 1: Inspect Lab middleware.**
 
@@ -252,7 +252,7 @@ Expected: middleware behavior is understood before implementation.
 
 - [ ] **Step 2: Write failing bearer validator tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-auth/src/bearer.rs`:
+Create a source-side test sidecar next to `crates/agent-auth/src/bearer.rs` with:
 
 ```rust
 use super::*;
@@ -321,7 +321,7 @@ impl BearerValidator {
 Run:
 
 ```bash
-cargo test -p agent-auth bearer
+cargo nextest run -p agent-auth bearer
 ```
 
 Expected: PASS.
@@ -330,7 +330,7 @@ Expected: PASS.
 
 **Files:**
 - Create: `crates/agent-auth/src/metadata.rs`
-- Test sidecar: `crates/agent-auth/src/metadata.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-auth/src/metadata.rs`
 
 - [ ] **Step 1: Read generic metadata and auth-context sources.**
 
@@ -345,7 +345,7 @@ Expected: AgentCast can emit standard auth metadata DTOs without importing Lab G
 
 - [ ] **Step 2: Write failing metadata serialization tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-auth/src/metadata.rs`:
+Create a source-side test sidecar next to `crates/agent-auth/src/metadata.rs` with:
 
 ```rust
 use super::*;
@@ -397,7 +397,7 @@ pub enum AuthScheme {
 Run:
 
 ```bash
-cargo test -p agent-auth metadata
+cargo nextest run -p agent-auth metadata
 ```
 
 Expected: PASS.
@@ -405,7 +405,7 @@ Expected: PASS.
 ### Task 4: Verify Full Auth Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-auth/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-auth/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-auth.md`
 
 - [ ] **Step 1: Run focused auth tests.**
@@ -413,7 +413,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cargo test -p agent-auth
+cargo nextest run -p agent-auth
 ```
 
 Expected: PASS.

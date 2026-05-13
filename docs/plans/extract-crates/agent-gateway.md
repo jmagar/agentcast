@@ -24,7 +24,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -103,10 +103,10 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-gateway/src/projection.rs` - MCP metadata to launcher action projection.
 - Create: `crates/agent-gateway/src/router.rs` - deterministic action ID to upstream/tool routing table.
 - Create: `crates/agent-gateway/src/invoke.rs` - invocation request/result envelopes.
-- Add sidecar tests in: `crates/agent-gateway/src/catalog.rs` (`#[cfg(test)] mod tests`) - merge and collision tests.
-- Add sidecar tests in: `crates/agent-gateway/src/projection.rs` (`#[cfg(test)] mod tests`) - MCP tool projection tests.
-- Add sidecar tests in: `crates/agent-gateway/src/router.rs` (`#[cfg(test)] mod tests`) - deterministic routing tests.
-- Add sidecar tests in: `crates/agent-gateway/src/catalog.rs` (`#[cfg(test)] mod tests`) - search handoff tests with `agent-search`.
+- Add source-side test sidecars for: `crates/agent-gateway/src/catalog.rs` - merge and collision tests.
+- Add source-side test sidecars for: `crates/agent-gateway/src/projection.rs` - MCP tool projection tests.
+- Add source-side test sidecars for: `crates/agent-gateway/src/router.rs` - deterministic routing tests.
+- Add source-side test sidecars for: `crates/agent-gateway/src/catalog.rs` - search handoff tests with `agent-search`.
 
 ## Implementation Tasks
 
@@ -117,7 +117,7 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-gateway/src/error.rs`
 - Create: `crates/agent-gateway/src/catalog.rs`
 - Create: `crates/agent-gateway/src/collision.rs`
-- Test sidecar: `crates/agent-gateway/src/catalog.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-gateway/src/catalog.rs`
 
 - [ ] **Step 1: Inspect Lab projection and index code.**
 
@@ -132,7 +132,7 @@ Expected: reusable projection and indexing behavior is identified.
 
 - [ ] **Step 2: Write failing catalog merge sidecar tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-gateway/src/catalog.rs`:
+Create a source-side test sidecar next to `crates/agent-gateway/src/catalog.rs` with:
 
 ```rust
 use super::*;
@@ -173,7 +173,7 @@ fn merge_rejects_collision_with_different_route() {
 Run:
 
 ```bash
-cargo test -p agent-gateway catalog_merge
+cargo nextest run -p agent-gateway catalog_merge
 ```
 
 Expected: FAIL because `ActionCatalog`, `GatewayAction`, and `RiskLevel` do not exist yet.
@@ -317,7 +317,7 @@ impl ActionCatalog {
 Run:
 
 ```bash
-cargo test -p agent-gateway catalog_merge
+cargo nextest run -p agent-gateway catalog_merge
 ```
 
 Expected: PASS.
@@ -327,11 +327,11 @@ Expected: PASS.
 **Files:**
 - Create: `crates/agent-gateway/src/projection.rs`
 - Modify: `crates/agent-gateway/src/lib.rs`
-- Test sidecar: `crates/agent-gateway/src/projection.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-gateway/src/projection.rs`
 
 - [ ] **Step 1: Write failing projection sidecar test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-gateway/src/projection.rs`:
+Create a source-side test sidecar next to `crates/agent-gateway/src/projection.rs` with:
 
 ```rust
 use super::*;
@@ -410,7 +410,7 @@ pub fn project_mcp_tool(upstream_id: &str, tool: RawMcpTool) -> GatewayAction {
 Run:
 
 ```bash
-cargo test -p agent-gateway projection
+cargo nextest run -p agent-gateway projection
 ```
 
 Expected: PASS.
@@ -420,7 +420,7 @@ Expected: PASS.
 **Files:**
 - Create: `crates/agent-gateway/src/router.rs`
 - Create: `crates/agent-gateway/src/invoke.rs`
-- Test sidecar: `crates/agent-gateway/src/router.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-gateway/src/router.rs`
 
 - [ ] **Step 1: Inspect Lab gateway manager.**
 
@@ -434,7 +434,7 @@ Expected: manager responsibilities are split between AgentCast gateway and MCP c
 
 - [ ] **Step 2: Write failing routing sidecar test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-gateway/src/router.rs`:
+Create a source-side test sidecar next to `crates/agent-gateway/src/router.rs` with:
 
 ```rust
 use super::*;
@@ -541,7 +541,7 @@ impl GatewayRouter {
 Run:
 
 ```bash
-cargo test -p agent-gateway invocation_routing
+cargo nextest run -p agent-gateway invocation_routing
 ```
 
 Expected: PASS.
@@ -551,7 +551,7 @@ Expected: PASS.
 **Files:**
 - Modify: `crates/agent-gateway/src/catalog.rs`
 - Modify: `crates/agent-search/src/lib.rs`
-- Test sidecar: `crates/agent-gateway/src/catalog.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-gateway/src/catalog.rs`
 
 - [ ] **Step 1: Use Lab tool index as source evidence.**
 
@@ -565,7 +565,7 @@ Expected: `agent-gateway` delegates ranking to `agent-search` and keeps routing/
 
 - [ ] **Step 2: Write failing search handoff sidecar test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-gateway/src/catalog.rs`:
+Create a source-side test sidecar next to `crates/agent-gateway/src/catalog.rs` with:
 
 ```rust
 use super::*;
@@ -632,7 +632,7 @@ pub use catalog::GatewaySearchDocument;
 Run:
 
 ```bash
-cargo test -p agent-gateway search_integration
+cargo nextest run -p agent-gateway search_integration
 ```
 
 Expected: PASS.
@@ -640,7 +640,7 @@ Expected: PASS.
 ### Task 5: Verify Full Gateway Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-gateway/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-gateway/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-gateway.md`
 
 - [ ] **Step 1: Run focused gateway tests.**
@@ -648,7 +648,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cargo test -p agent-gateway
+cargo nextest run -p agent-gateway
 ```
 
 Expected: PASS.

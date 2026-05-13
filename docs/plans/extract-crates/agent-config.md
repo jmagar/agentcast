@@ -18,7 +18,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -89,9 +89,9 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-config/src/load.rs` - config file loading, defaults, and explicit `.env` key reference resolution.
 - Create: `crates/agent-config/src/mutation.rs` - add/update/remove helpers for upstream entries.
 - Create: `crates/agent-config/src/env_merge.rs` - safe `.env` merge/write helper adapted from Lab.
-- Add sidecar tests in: `crates/agent-config/src/{mcp,load}.rs` (`#[cfg(test)] mod tests`) - MCP config load/validation tests.
-- Add sidecar tests in: `crates/agent-config/src/mutation.rs` (`#[cfg(test)] mod tests`) - mutation tests that preserve unrelated fields.
-- Add sidecar tests in: `crates/agent-config/src/env_merge.rs` (`#[cfg(test)] mod tests`) - idempotence, conflict, backup, and permission tests.
+- Add source-side test sidecars for: `crates/agent-config/src/{mcp,load}.rs` - MCP config load/validation tests.
+- Add source-side test sidecars for: `crates/agent-config/src/mutation.rs` - mutation tests that preserve unrelated fields.
+- Add source-side test sidecars for: `crates/agent-config/src/env_merge.rs` - idempotence, conflict, backup, and permission tests.
 
 ## Implementation Tasks
 
@@ -103,7 +103,7 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-config/src/paths.rs`
 - Create: `crates/agent-config/src/mcp.rs`
 - Create: `crates/agent-config/src/load.rs`
-- Test sidecar: `crates/agent-config/src/{mcp,load}.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-config/src/{mcp,load}.rs`
 
 - [ ] **Step 1: Inspect the Lab config model before naming AgentCast types.**
 
@@ -117,7 +117,7 @@ Expected: Lab's reusable upstream shape is identified without carrying `~/.lab`,
 
 - [ ] **Step 2: Write the failing MCP config parsing test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-config/src/{mcp,load}.rs`:
+Create a source-side test sidecar next to `crates/agent-config/src/{mcp,load}.rs` with:
 
 ```rust
 use super::*;
@@ -173,7 +173,7 @@ fn rejects_blank_upstream_id() {
 Run:
 
 ```bash
-cargo test -p agent-config mcp_config
+cargo nextest run -p agent-config mcp_config
 ```
 
 Expected: FAIL because `load_from_str`, `McpTransport`, and `StdioUpstreamConfig` do not exist yet.
@@ -382,7 +382,7 @@ impl AgentPaths {
 Run:
 
 ```bash
-cargo test -p agent-config mcp_config
+cargo nextest run -p agent-config mcp_config
 ```
 
 Expected: PASS for structured stdio config parsing and blank ID rejection.
@@ -392,7 +392,7 @@ Expected: PASS for structured stdio config parsing and blank ID rejection.
 **Files:**
 - Create: `crates/agent-config/src/mutation.rs`
 - Modify: `crates/agent-config/src/lib.rs`
-- Test sidecar: `crates/agent-config/src/mutation.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-config/src/mutation.rs`
 
 - [ ] **Step 1: Inspect Lab gateway config mutation tests.**
 
@@ -406,7 +406,7 @@ Expected: reusable add/update/remove behavior is identified, and service credent
 
 - [ ] **Step 2: Write failing mutation tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-config/src/mutation.rs`:
+Create a source-side test sidecar next to `crates/agent-config/src/mutation.rs` with:
 
 ```rust
 use super::*;
@@ -497,7 +497,7 @@ pub fn remove_mcp_upstream(config: &mut AgentConfig, id: &str) -> ConfigResult<M
 Run:
 
 ```bash
-cargo test -p agent-config config_mutation
+cargo nextest run -p agent-config config_mutation
 ```
 
 Expected: PASS for add, duplicate, and remove behavior.
@@ -507,7 +507,7 @@ Expected: PASS for add, duplicate, and remove behavior.
 **Files:**
 - Create: `crates/agent-config/src/env_merge.rs`
 - Modify: `crates/agent-config/src/lib.rs`
-- Test sidecar: `crates/agent-config/src/env_merge.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-config/src/env_merge.rs`
 
 - [ ] **Step 1: Read the Lab env merge safety cases.**
 
@@ -521,7 +521,7 @@ Expected: AgentCast covers idempotence, comment preservation, conflicts, forced 
 
 - [ ] **Step 2: Write failing env merge tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-config/src/env_merge.rs`:
+Create a source-side test sidecar next to `crates/agent-config/src/env_merge.rs` with:
 
 ```rust
 use super::*;
@@ -648,7 +648,7 @@ pub fn merge_env_file<'a>(
 Run:
 
 ```bash
-cargo test -p agent-config env_merge
+cargo nextest run -p agent-config env_merge
 ```
 
 Expected: PASS for comment preservation, idempotence, and overwrite policy.
@@ -658,14 +658,14 @@ Expected: PASS for comment preservation, idempotence, and overwrite policy.
 **Files:**
 - Read: `docs/plans/extract-crates/agent-config.md`
 - Read: `docs/reports/lab-extraction-source-map.md`
-- Test sidecar: `crates/agent-config/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-config/src/*.rs`
 
 - [ ] **Step 1: Run focused crate tests.**
 
 Run:
 
 ```bash
-cargo test -p agent-config
+cargo nextest run -p agent-config
 ```
 
 Expected: PASS.

@@ -19,7 +19,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -34,13 +34,20 @@ MVP tests should focus first on the MCP launcher runtime path in [MVP.md](./MVP.
 Before merging:
 
 ```bash
-cargo fmt --all -- --check
-cargo check --workspace
-cargo nextest run --workspace
-cargo clippy --workspace --all-targets -- -D warnings
+cargo xtask verify
 ```
 
 `cargo nextest run --workspace` is the preferred Rust test command per `docs/DECISIONS.md` decision 0009. Use `cargo test --workspace` when validating doctests, compatibility, or when nextest is unavailable.
+
+`cargo xtask ci` runs the push/CI-sized local suite: format check, workspace check, clippy, and nextest.
+
+`cargo xtask verify` is the broader "before declaring completion" command. It runs `cargo xtask ci` plus `cargo test --workspace` for doctest and compatibility coverage.
+
+Use task-specific commands such as `cargo xtask fmt-check`, `cargo xtask check`, `cargo xtask clippy`, `cargo xtask nextest`, and `cargo xtask test` when narrowing a failure.
+
+`cargo xtask audit-docs` checks authored docs frontmatter, local markdown links, `upstream_refs`, `related` paths, and rejects stale `modified_at_commit: "unborn"` values.
+
+`cargo xtask secrets` runs the repo secret scan with `gitleaks detect --no-banner` and the repo `.gitleaks.toml` allowlist.
 
 ## Hook Policy
 
@@ -132,13 +139,15 @@ Do not snapshot nondeterministic fields unless normalized.
 
 ## Fixture Policy
 
-Protocol fixtures should live near the owning crate:
+Source-side unit test fixtures should live next to the module that owns the behavior:
 
 ```txt
-crates/agent-acp/tests/fixtures/
-crates/agent-mcp/tests/fixtures/
-crates/agent-registry/tests/fixtures/
+crates/agent-acp/src/session/fixtures/
+crates/agent-mcp/src/stdio/fixtures/
+crates/agent-registry/src/mcp/fixtures/
 ```
+
+Use `crates/*/tests/fixtures/` only for public integration tests that exercise crate APIs, CLI/API surfaces, protocol compatibility, or full workflows.
 
 ## No Network Tests By Default
 

@@ -19,7 +19,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -96,8 +96,8 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-store/src/sqlite.rs` - SQLite connection opener and file-permission setup.
 - Create: `crates/agent-store/src/migrations.rs` - migration list and idempotent runner.
 - Create: `crates/agent-store/src/catalog.rs` - catalog snapshot store trait and SQLite implementation.
-- Add sidecar tests in: `crates/agent-store/src/migrations.rs` (`#[cfg(test)] mod tests`) - migration idempotence tests.
-- Add sidecar tests in: `crates/agent-store/src/catalog.rs` (`#[cfg(test)] mod tests`) - catalog snapshot round-trip tests.
+- Add source-side test sidecars for: `crates/agent-store/src/migrations.rs` - migration idempotence tests.
+- Add source-side test sidecars for: `crates/agent-store/src/catalog.rs` - catalog snapshot round-trip tests.
 
 ## Implementation Tasks
 
@@ -106,7 +106,7 @@ Create or modify these AgentCast files when implementing this plan:
 **Files:**
 - Create: `crates/agent-store/src/sqlite.rs`
 - Create: `crates/agent-store/src/migrations.rs`
-- Test sidecar: `crates/agent-store/src/migrations.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-store/src/migrations.rs`
 
 - [ ] **Step 1: Read the Lab registry store migration path.**
 
@@ -120,7 +120,7 @@ Expected: AgentCast store tests cover open, migrate, idempotence, and restrictiv
 
 - [ ] **Step 2: Write failing migration tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-store/src/migrations.rs`:
+Create a source-side test sidecar next to `crates/agent-store/src/migrations.rs` with:
 
 ```rust
 use super::*;
@@ -231,11 +231,11 @@ pub fn run_migrations(conn: &Connection) -> StoreResult<()> {
 **Files:**
 - Create: `crates/agent-store/src/catalog.rs`
 - Modify: `crates/agent-store/src/lib.rs`
-- Test sidecar: `crates/agent-store/src/catalog.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-store/src/catalog.rs`
 
 - [ ] **Step 1: Write failing catalog round-trip test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-store/src/catalog.rs`:
+Create a source-side test sidecar next to `crates/agent-store/src/catalog.rs` with:
 
 ```rust
 use super::*;
@@ -322,7 +322,7 @@ impl SqliteCatalogStore {
 ### Task 3: Verify Full Store Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-store/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-store/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-store.md`
 
 - [ ] **Step 1: Run focused store tests.**
@@ -330,7 +330,7 @@ impl SqliteCatalogStore {
 Run:
 
 ```bash
-cargo test -p agent-store
+cargo nextest run -p agent-store
 ```
 
 Expected: migrations and store round trips pass using temp directories/databases only.

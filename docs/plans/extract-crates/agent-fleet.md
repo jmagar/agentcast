@@ -17,7 +17,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -98,8 +98,8 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-fleet/src/heartbeat.rs` - heartbeat DTOs and status.
 - Create: `crates/agent-fleet/src/capability.rs` - remote capability summary.
 - Create: `crates/agent-fleet/src/execution.rs` - post-v0 remote execution request DTOs.
-- Add sidecar tests in: `crates/agent-fleet/src/{node,heartbeat,capability}.rs` (`#[cfg(test)] mod tests`) - serialization contract tests.
-- Add sidecar tests in: `crates/agent-fleet/src/lib.rs` (`#[cfg(test)] mod tests`) - local MVP isolation tests.
+- Add source-side test sidecars for: `crates/agent-fleet/src/{node,heartbeat,capability}.rs` - serialization contract tests.
+- Add source-side test sidecars for: `crates/agent-fleet/src/lib.rs` - local MVP isolation tests.
 
 ## Implementation Tasks
 
@@ -108,7 +108,7 @@ Create or modify these AgentCast files when implementing this plan:
 **Files:**
 - Create: `crates/agent-fleet/src/node.rs`
 - Create: `crates/agent-fleet/src/heartbeat.rs`
-- Test sidecar: `crates/agent-fleet/src/{node,heartbeat,capability}.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-fleet/src/{node,heartbeat,capability}.rs`
 
 - [ ] **Step 1: Read Lab node identity and runtime evidence.**
 
@@ -122,7 +122,7 @@ Expected: AgentCast starts with serializable contracts only and does not impleme
 
 - [ ] **Step 2: Write failing fleet contract tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-fleet/src/{node,heartbeat,capability}.rs`:
+Create a source-side test sidecar next to `crates/agent-fleet/src/{node,heartbeat,capability}.rs` with:
 
 ```rust
 use super::*;
@@ -228,7 +228,7 @@ pub enum FleetStatus {
 
 - [ ] **Step 1: Write boundary test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-fleet/src/lib.rs`:
+Create a source-side test sidecar next to `crates/agent-fleet/src/lib.rs` with:
 
 ```rust
 #[test]
@@ -245,7 +245,7 @@ fn fleet_crate_does_not_define_local_mcp_runtime_types() {
 Run:
 
 ```bash
-cargo test -p agent-fleet
+cargo nextest run -p agent-fleet
 ```
 
 Expected: PASS.
@@ -253,7 +253,7 @@ Expected: PASS.
 ### Task 3: Verify Full Fleet Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-fleet/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-fleet/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-fleet.md`
 
 - [ ] **Step 1: Confirm v0 crates do not depend on fleet.**
@@ -271,7 +271,7 @@ Expected: no output until fleet is promoted beyond post-v0.
 Run:
 
 ```bash
-cargo test -p agent-fleet
+cargo nextest run -p agent-fleet
 ```
 
 Expected: model and contract tests pass without remote hosts.

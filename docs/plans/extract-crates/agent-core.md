@@ -19,7 +19,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -85,9 +85,9 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-core/src/id.rs` - stable ID helpers for actions and upstreams.
 - Create: `crates/agent-core/src/time.rs` - timestamp wrapper helpers.
 - Create: `crates/agent-core/src/json.rs` - small JSON object extraction helpers.
-- Add sidecar tests in: `crates/agent-core/src/action.rs` (`#[cfg(test)] mod tests`) - action serialization tests.
-- Add sidecar tests in: `crates/agent-core/src/error.rs` (`#[cfg(test)] mod tests`) - stable error kind tests.
-- Add sidecar tests in: `crates/agent-core/src/lib.rs` (`#[cfg(test)] mod tests`) - dependency direction test.
+- Add source-side test sidecars for: `crates/agent-core/src/action.rs` - action serialization tests.
+- Add source-side test sidecars for: `crates/agent-core/src/error.rs` - stable error kind tests.
+- Add source-side test sidecars for: `crates/agent-core/src/lib.rs` - dependency direction test.
 
 ## Implementation Tasks
 
@@ -98,7 +98,7 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-core/src/action.rs`
 - Create: `crates/agent-core/src/error.rs`
 - Create: `crates/agent-core/src/id.rs`
-- Test sidecar: `crates/agent-core/src/action.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-core/src/action.rs`
 
 - [ ] **Step 1: Inspect Lab action metadata.**
 
@@ -112,7 +112,7 @@ Expected: action metadata and param metadata candidates are identified.
 
 - [ ] **Step 2: Write failing action serialization tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-core/src/action.rs`:
+Create a source-side test sidecar next to `crates/agent-core/src/action.rs` with:
 
 ```rust
 use super::*;
@@ -136,7 +136,7 @@ fn action_metadata_serializes_stable_kind_strings() {
 Run:
 
 ```bash
-cargo test -p agent-core action
+cargo nextest run -p agent-core action
 ```
 
 Expected: FAIL because `ActionMetadata` and `ActionRisk` do not exist yet.
@@ -217,7 +217,7 @@ pub fn scoped_action_id(scope: &str, upstream_id: &str, action: &str) -> String 
 Run:
 
 ```bash
-cargo test -p agent-core action
+cargo nextest run -p agent-core action
 ```
 
 Expected: PASS.
@@ -227,7 +227,7 @@ Expected: PASS.
 **Files:**
 - Create: `crates/agent-core/src/error.rs`
 - Create: `crates/agent-core/src/json.rs`
-- Test sidecar: `crates/agent-core/src/error.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-core/src/error.rs`
 
 - [ ] **Step 1: Read Lab stable error-kind sources.**
 
@@ -241,7 +241,7 @@ Expected: AgentCast error kind tests use AgentCast names and omit Lab service va
 
 - [ ] **Step 2: Write failing error tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-core/src/error.rs`:
+Create a source-side test sidecar next to `crates/agent-core/src/error.rs` with:
 
 ```rust
 use super::*;
@@ -349,7 +349,7 @@ pub fn now_timestamp() -> jiff::Timestamp {
 Run:
 
 ```bash
-cargo test -p agent-core error
+cargo nextest run -p agent-core error
 ```
 
 Expected: PASS.
@@ -358,7 +358,7 @@ Expected: PASS.
 
 **Files:**
 - Read: `crates/*/Cargo.toml`
-- Test sidecar: `crates/agent-core/src/lib.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-core/src/lib.rs`
 
 - [ ] **Step 1: Check that `agent-core` has no AgentCast crate dependencies.**
 
@@ -372,11 +372,11 @@ Expected: `agent-core` depends only on workspace external crates.
 
 - [ ] **Step 2: Add dependency boundary test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-core/src/lib.rs`:
+Create a source-side test sidecar next to `crates/agent-core/src/lib.rs` with:
 
 ```rust
 #[test]
-fn core_cargo_toml_has_no_agentcast_crate_dependencies() {
+fn core_cargo_toml_has_no_agent_crate_dependencies() {
     let manifest = std::fs::read_to_string("Cargo.toml").unwrap();
     for forbidden in [
         "agent-protocol",
@@ -395,7 +395,7 @@ fn core_cargo_toml_has_no_agentcast_crate_dependencies() {
 Run:
 
 ```bash
-cargo test -p agent-core
+cargo nextest run -p agent-core
 ```
 
 Expected: core tests pass.

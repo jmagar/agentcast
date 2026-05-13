@@ -1,0 +1,5 @@
+[alias]
+xtask = "run -p xtask --"
+agentcast-ci = "xtask ci"
+agentcast-verify = "xtask verify"
+agentcast-check-cranelift = "xtask check-cranelift"

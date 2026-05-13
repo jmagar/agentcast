@@ -19,7 +19,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -96,8 +96,8 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-schema/src/field.rs` - normalized field DTOs.
 - Create: `crates/agent-schema/src/normalize.rs` - JSON Schema normalization.
 - Create: `crates/agent-schema/src/validate.rs` - invocation payload validation.
-- Add sidecar tests in: `crates/agent-schema/src/normalize.rs` (`#[cfg(test)] mod tests`) - required/default/enum/array/object tests.
-- Add sidecar tests in: `crates/agent-schema/src/validate.rs` (`#[cfg(test)] mod tests`) - validation tests.
+- Add source-side test sidecars for: `crates/agent-schema/src/normalize.rs` - required/default/enum/array/object tests.
+- Add source-side test sidecars for: `crates/agent-schema/src/validate.rs` - validation tests.
 
 ## Implementation Tasks
 
@@ -105,7 +105,7 @@ Create or modify these AgentCast files when implementing this plan:
 
 **Files:**
 - Create: `crates/agent-schema/src/normalize.rs`
-- Test sidecar: `crates/agent-schema/src/normalize.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-schema/src/normalize.rs`
 
 - [ ] **Step 1: Read Lab schema generation and OpenAPI mapping.**
 
@@ -119,7 +119,7 @@ Expected: AgentCast supports required fields, defaults, enums, arrays, nested ob
 
 - [ ] **Step 2: Write failing normalization tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-schema/src/normalize.rs`:
+Create a source-side test sidecar next to `crates/agent-schema/src/normalize.rs` with:
 
 ```rust
 use super::*;
@@ -269,11 +269,11 @@ pub fn normalize_schema(schema: &Value) -> SchemaResult<NormalizedSchema> {
 
 **Files:**
 - Create: `crates/agent-schema/src/validate.rs`
-- Test sidecar: `crates/agent-schema/src/validate.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-schema/src/validate.rs`
 
 - [ ] **Step 1: Write failing validation test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-schema/src/validate.rs`:
+Create a source-side test sidecar next to `crates/agent-schema/src/validate.rs` with:
 
 ```rust
 use super::*;
@@ -325,7 +325,7 @@ pub fn validate_payload(schema: &NormalizedSchema, payload: &Value) -> SchemaRes
 ### Task 3: Verify Full Schema Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-schema/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-schema/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-schema.md`
 
 - [ ] **Step 1: Run focused schema tests.**
@@ -333,7 +333,7 @@ pub fn validate_payload(schema: &NormalizedSchema, payload: &Value) -> SchemaRes
 Run:
 
 ```bash
-cargo test -p agent-schema
+cargo nextest run -p agent-schema
 ```
 
 Expected: schema normalization and validation tests pass without launching MCP servers.

@@ -19,7 +19,7 @@ last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
 modified_on_branch: "main"
 modified_at_version: "0.1.0"
-modified_at_commit: "unborn"
+modified_at_commit: "fe10007"
 review_basis: "cross-referenced against local docs/references snapshot"
 ---
 
@@ -93,8 +93,8 @@ Create or modify these AgentCast files when implementing this plan:
 - Create: `crates/agent-search/src/document.rs` - searchable action document model.
 - Create: `crates/agent-search/src/index.rs` - deterministic in-memory search index.
 - Create: `crates/agent-search/src/query.rs` - query normalization and limits.
-- Add sidecar tests in: `crates/agent-search/src/index.rs` (`#[cfg(test)] mod tests`) - deterministic ranking tests.
-- Add sidecar tests in: `crates/agent-search/src/index.rs` (`#[cfg(test)] mod tests`) - empty-query behavior tests.
+- Add source-side test sidecars for: `crates/agent-search/src/index.rs` - deterministic ranking tests.
+- Add source-side test sidecars for: `crates/agent-search/src/index.rs` - empty-query behavior tests.
 
 ## Implementation Tasks
 
@@ -102,7 +102,7 @@ Create or modify these AgentCast files when implementing this plan:
 
 **Files:**
 - Create: `crates/agent-search/src/index.rs`
-- Test sidecar: `crates/agent-search/src/index.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-search/src/index.rs`
 
 - [ ] **Step 1: Read Lab scoring and hashing.**
 
@@ -116,7 +116,7 @@ Expected: AgentCast ranking tests cover name, description, upstream, aliases/cat
 
 - [ ] **Step 2: Write failing ranking tests.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-search/src/index.rs`:
+Create a source-side test sidecar next to `crates/agent-search/src/index.rs` with:
 
 ```rust
 use super::*;
@@ -286,12 +286,12 @@ fn score_document(doc: &SearchDocument, terms: &[String]) -> Option<SearchResult
 ### Task 2: Define Empty Query Behavior
 
 **Files:**
-- Test sidecar: `crates/agent-search/src/index.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-search/src/index.rs`
 - Modify: `crates/agent-search/src/index.rs`
 
 - [ ] **Step 1: Write empty-query test.**
 
-Add this `#[cfg(test)] mod tests` sidecar to `crates/agent-search/src/index.rs`:
+Create a source-side test sidecar next to `crates/agent-search/src/index.rs` with:
 
 ```rust
 use super::*;
@@ -308,7 +308,7 @@ fn empty_query_returns_no_results() {
 Run:
 
 ```bash
-cargo test -p agent-search empty_query
+cargo nextest run -p agent-search empty_query
 ```
 
 Expected: PASS.
@@ -316,7 +316,7 @@ Expected: PASS.
 ### Task 3: Verify Full Search Extraction
 
 **Files:**
-- Test sidecar: `crates/agent-search/src/*.rs` (`#[cfg(test)] mod tests`)
+- Test sidecar: `crates/agent-search/src/*.rs`
 - Read: `docs/plans/extract-crates/agent-search.md`
 
 - [ ] **Step 1: Run focused search tests.**
@@ -324,7 +324,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cargo test -p agent-search
+cargo nextest run -p agent-search
 ```
 
 Expected: ranking and filtering tests are deterministic.
