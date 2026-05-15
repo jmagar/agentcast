@@ -1,4 +1,4 @@
-use agent_api::{GatewayApi, gateway_router, protected_mcp_router};
+use agent_api::{GatewayApi, gateway_router, oauth_router, protected_mcp_router};
 use agent_auth::ScopeSet;
 use agent_config::parse_mcp_json;
 use agent_gateway::{ProtectedRouteConfig, ProtectedRouteIndex, ProtectedRouteTarget};
@@ -38,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
     let protected_routes = protected_route_index(&args)?;
     let api = GatewayApi::start(configs).await;
     let runtime = api.runtime();
-    let mut router = gateway_router(api);
+    let mut router = gateway_router(api).merge(oauth_router());
     if let Some(routes) = protected_routes {
         router = router.merge(protected_mcp_router(routes, runtime));
     }

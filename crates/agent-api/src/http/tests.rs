@@ -142,6 +142,128 @@ async fn protected_mcp_router_rejects_missing_bearer_with_challenge() {
     assert!(response.headers().contains_key("www-authenticate"));
 }
 
+#[tokio::test]
+async fn oauth_router_runs_authorize_callback_status_and_clear_without_exposing_tokens() {
+    let router = oauth_router();
+    let metadata = oauth_metadata();
+
+    let probe = request_json(
+        router.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/v1/oauth/probe")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "issuer_url": "https://auth.example.test",
+                    "metadata": metadata
+                })
+                .to_string(),
+            ))
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(probe["status"], "disconnected");
+
+    let authorization = request_json(
+        router.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/v1/oauth/authorize")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "issuer_url": "https://auth.example.test",
+                    "metadata": oauth_metadata(),
+                    "subject": "user-1",
+                    "upstream_id": "fixture",
+                    "client_id": "client-1",
+                    "redirect_uri": "https://agentcast.example.test/oauth/callback",
+                    "resource_uri": "https://mcp.example.test/syslog",
+                    "state": "state-1",
+                    "code_challenge": "challenge",
+                    "expires_at_unix": 2000,
+                    "protected_resource_scopes": "mcp:read"
+                })
+                .to_string(),
+            ))
+            .expect("request"),
+    )
+    .await;
+    assert!(
+        authorization["authorization_url"]
+            .as_str()
+            .expect("authorization url")
+            .contains("code_challenge_method=S256")
+    );
+    assert_eq!(authorization["selected_scopes"][0], "mcp:read");
+
+    let callback = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/oauth/callback")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "state": "state-1",
+                        "subject": "user-1",
+                        "code": "code-1",
+                        "now_unix": 1000,
+                        "credential": {
+                            "subject": "user-1",
+                            "upstream_id": "fixture",
+                            "access_token": "secret-access-token",
+                            "refresh_token": "secret-refresh-token",
+                            "scopes": ["mcp:read"],
+                            "expires_at_unix": 5000,
+                            "refresh_failed": false
+                        }
+                    })
+                    .to_string(),
+                ))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(callback.status(), StatusCode::NO_CONTENT);
+
+    let status = request_json(
+        router.clone(),
+        Request::builder()
+            .uri("/v1/oauth/status?subject=user-1&upstream_id=fixture&now_unix=1000")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status["status"], "connected");
+    assert!(!status.to_string().contains("secret-access-token"));
+
+    let cleared = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("DELETE")
+                .uri("/v1/oauth/credentials?subject=user-1&upstream_id=fixture")
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(cleared.status(), StatusCode::NO_CONTENT);
+
+    let status = request_json(
+        router,
+        Request::builder()
+            .uri("/v1/oauth/status?subject=user-1&upstream_id=fixture&now_unix=1000")
+            .body(Body::empty())
+            .expect("request"),
+    )
+    .await;
+    assert_eq!(status["status"], "disconnected");
+}
+
 async fn request_json(router: Router, request: Request<Body>) -> Value {
     let response = router.oneshot(request).await.expect("response");
     assert_eq!(response.status(), StatusCode::OK);
@@ -183,4 +305,14 @@ fn protected_routes() -> ProtectedRouteIndex {
         },
     }])
     .expect("routes")
+}
+
+fn oauth_metadata() -> Value {
+    json!({
+        "issuer": "https://auth.example.test",
+        "authorization_endpoint": "https://auth.example.test/authorize",
+        "token_endpoint": "https://auth.example.test/token",
+        "code_challenge_methods_supported": ["S256"],
+        "scopes_supported": ["mcp:read", "mcp:write"]
+    })
 }

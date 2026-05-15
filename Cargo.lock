@@ -43,6 +43,7 @@ dependencies = [
  "agent-registry",
  "agent-runtime",
  "agent-search",
+ "agent-store",
  "anyhow",
  "axum",
  "futures",
