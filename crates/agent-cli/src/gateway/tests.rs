@@ -115,5 +115,8 @@ async fn cli_handlers_read_resources_and_get_prompts() {
         .expect("prompt");
 
     assert_eq!(resource["contents"][0]["text"], "fixture resource");
-    assert_eq!(prompt["messages"][0]["content"]["text"], "Summarize gateway");
+    assert_eq!(
+        prompt["messages"][0]["content"]["text"],
+        "Summarize gateway"
+    );
 }

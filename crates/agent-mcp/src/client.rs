@@ -36,9 +36,10 @@ impl McpClient {
             .spawn()
             .map_err(|error| McpError::Connection(error.to_string()))?
             .0;
-        let service = ().serve_with_ct(transport, options.cancellation_token).await.map_err(
-            |error| McpError::Connection(error.to_string()),
-        )?;
+        let service = ()
+            .serve_with_ct(transport, options.cancellation_token)
+            .await
+            .map_err(|error| McpError::Connection(error.to_string()))?;
 
         Ok(Self { service })
     }
@@ -83,7 +84,11 @@ impl McpClient {
             .list_resource_templates(None)
             .await
             .map_err(|error| McpError::Protocol(error.to_string()))?;
-        Ok(result.resource_templates.into_iter().map(Into::into).collect())
+        Ok(result
+            .resource_templates
+            .into_iter()
+            .map(Into::into)
+            .collect())
     }
 
     pub async fn read_resource(&self, uri: &str) -> McpResult<McpReadResourceResult> {
@@ -104,11 +109,17 @@ impl McpClient {
             .map(|prompts| prompts.into_iter().map(Into::into).collect())
     }
 
-    pub async fn get_prompt(&self, name: &str, arguments: Option<Map<String, Value>>) -> McpResult<Value> {
+    pub async fn get_prompt(
+        &self,
+        name: &str,
+        arguments: Option<Map<String, Value>>,
+    ) -> McpResult<Value> {
         self.service
             .peer()
             .get_prompt(match arguments {
-                Some(arguments) => GetPromptRequestParams::new(name.to_string()).with_arguments(arguments),
+                Some(arguments) => {
+                    GetPromptRequestParams::new(name.to_string()).with_arguments(arguments)
+                }
                 None => GetPromptRequestParams::new(name.to_string()),
             })
             .await

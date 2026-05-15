@@ -82,7 +82,11 @@ impl McpRuntime {
                         RuntimeUpstream {
                             name: server_name.clone(),
                             client: Some(client),
-                            snapshot: empty_snapshot(server_id, server_name, ServerStatus::Degraded),
+                            snapshot: empty_snapshot(
+                                server_id,
+                                server_name,
+                                ServerStatus::Degraded,
+                            ),
                             failure: Some(error.to_string()),
                         },
                     );

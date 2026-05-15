@@ -45,7 +45,11 @@ impl GatewayApi {
             .collect()
     }
 
-    pub async fn call_action(&self, action_id: &str, arguments: Value) -> Result<Value, GatewayError> {
+    pub async fn call_action(
+        &self,
+        action_id: &str,
+        arguments: Value,
+    ) -> Result<Value, GatewayError> {
         self.gateway
             .invoke(
                 &self.runtime,

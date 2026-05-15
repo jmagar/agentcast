@@ -66,10 +66,19 @@ async fn stdio_client_lists_and_gets_prompts() {
 
     let prompts = client.list_prompts().await.expect("prompts listed");
     let prompt = client
-        .get_prompt("summarize", Some(serde_json::Map::from_iter([("topic".to_string(), json!("gateway"))])))
+        .get_prompt(
+            "summarize",
+            Some(serde_json::Map::from_iter([(
+                "topic".to_string(),
+                json!("gateway"),
+            )])),
+        )
         .await
         .expect("prompt");
 
     assert_eq!(prompts[0].name, "summarize");
-    assert_eq!(prompt["messages"][0]["content"]["text"], "Summarize gateway");
+    assert_eq!(
+        prompt["messages"][0]["content"]["text"],
+        "Summarize gateway"
+    );
 }

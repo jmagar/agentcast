@@ -52,8 +52,16 @@ pub struct McpReadResourceResult {
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum McpResourceContent {
-    Text { uri: String, mime_type: Option<String>, text: String },
-    Blob { uri: String, mime_type: Option<String>, blob: String },
+    Text {
+        uri: String,
+        mime_type: Option<String>,
+        text: String,
+    },
+    Blob {
+        uri: String,
+        mime_type: Option<String>,
+        blob: String,
+    },
 }
 
 impl From<Tool> for McpToolMetadata {
@@ -63,7 +71,9 @@ impl From<Tool> for McpToolMetadata {
             title: tool.title,
             description: tool.description.map(|description| description.into_owned()),
             input_schema: Value::Object((*tool.input_schema).clone()),
-            output_schema: tool.output_schema.map(|schema| Value::Object((*schema).clone())),
+            output_schema: tool
+                .output_schema
+                .map(|schema| Value::Object((*schema).clone())),
             annotations: tool
                 .annotations
                 .and_then(|annotations| serde_json::to_value(annotations).ok()),

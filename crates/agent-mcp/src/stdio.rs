@@ -12,7 +12,10 @@ pub struct StdioConnection {
 }
 
 impl StdioConnection {
-    pub fn new(command: impl Into<String>, args: impl IntoIterator<Item = impl Into<String>>) -> Self {
+    pub fn new(
+        command: impl Into<String>,
+        args: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Self {
         Self {
             command: command.into(),
             args: args.into_iter().map(Into::into).collect(),
@@ -20,7 +23,10 @@ impl StdioConnection {
         }
     }
 
-    pub fn with_env(mut self, env: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>) -> Self {
+    pub fn with_env(
+        mut self,
+        env: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
+    ) -> Self {
         self.env = env
             .into_iter()
             .map(|(key, value)| (key.into(), value.into()))

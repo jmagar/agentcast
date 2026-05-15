@@ -1,7 +1,10 @@
 use super::*;
 use agent_auth::ScopeSet;
 use agent_gateway::{ProtectedRouteConfig, ProtectedRouteTarget};
-use agent_protocol::McpServerId;
+use agent_protocol::{McpServerConfig, McpServerId, McpTransportConfig};
+use agent_runtime::McpRuntime;
+use serde_json::json;
+use std::collections::BTreeMap;
 
 fn api() -> ProtectedMcpRouteApi {
     let routes = ProtectedRouteIndex::from_routes(vec![ProtectedRouteConfig {
@@ -106,4 +109,180 @@ fn authorized_request_returns_dispatch_target() {
             server_id: McpServerId::new("syslog")
         }
     );
+}
+
+#[tokio::test]
+async fn authorized_json_rpc_call_dispatches_to_upstream_runtime() {
+    let runtime = runtime().await;
+
+    let response = api()
+        .handle_json_rpc(
+            &runtime,
+            ProtectedMcpJsonRpcRequest {
+                host: "mcp.example.test".to_string(),
+                path: "/syslog".to_string(),
+                public_origin: "https://mcp.example.test".to_string(),
+                authorization: Some(
+                    "Bearer sub=user-1;aud=https://mcp.example.test/syslog;scope=mcp:read"
+                        .to_string(),
+                ),
+                body: json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "echo",
+                        "arguments": { "message": "hello" }
+                    }
+                }),
+            },
+        )
+        .await;
+
+    let ProtectedMcpJsonRpcResponse::JsonRpc(body) = response else {
+        panic!("expected json-rpc response");
+    };
+    assert_eq!(body["id"], 1);
+    assert_eq!(body["result"]["content"][0]["text"], "hello");
+}
+
+#[tokio::test]
+async fn unauthenticated_json_rpc_request_is_rejected_before_dispatch() {
+    let runtime = runtime().await;
+
+    let response = api()
+        .handle_json_rpc(
+            &runtime,
+            ProtectedMcpJsonRpcRequest {
+                host: "mcp.example.test".to_string(),
+                path: "/syslog".to_string(),
+                public_origin: "https://mcp.example.test".to_string(),
+                authorization: None,
+                body: json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/list"
+                }),
+            },
+        )
+        .await;
+
+    let ProtectedMcpJsonRpcResponse::Rejected(ProtectedMcpResponse::Challenge { status, .. }) =
+        response
+    else {
+        panic!("expected rejected challenge");
+    };
+    assert_eq!(status, ResponseStatus::Unauthorized);
+}
+
+#[tokio::test]
+async fn authorized_json_rpc_lists_resources_and_prompts_from_runtime() {
+    let runtime = runtime().await;
+
+    let resources = api()
+        .handle_json_rpc(
+            &runtime,
+            protected_request(json!({
+                "jsonrpc": "2.0",
+                "id": "resources",
+                "method": "resources/list"
+            })),
+        )
+        .await;
+    let ProtectedMcpJsonRpcResponse::JsonRpc(resources) = resources else {
+        panic!("expected resources");
+    };
+    assert_eq!(resources["result"]["resources"][0]["uri"], "fixture://echo");
+
+    let prompts = api()
+        .handle_json_rpc(
+            &runtime,
+            protected_request(json!({
+                "jsonrpc": "2.0",
+                "id": "prompts",
+                "method": "prompts/list"
+            })),
+        )
+        .await;
+    let ProtectedMcpJsonRpcResponse::JsonRpc(prompts) = prompts else {
+        panic!("expected prompts");
+    };
+    assert_eq!(prompts["result"]["prompts"][0]["name"], "summarize");
+}
+
+#[tokio::test]
+async fn authorized_json_rpc_reads_resources_and_gets_prompts() {
+    let runtime = runtime().await;
+
+    let resource = api()
+        .handle_json_rpc(
+            &runtime,
+            protected_request(json!({
+                "jsonrpc": "2.0",
+                "id": "resource",
+                "method": "resources/read",
+                "params": { "uri": "fixture://echo" }
+            })),
+        )
+        .await;
+    let ProtectedMcpJsonRpcResponse::JsonRpc(resource) = resource else {
+        panic!("expected resource");
+    };
+    assert_eq!(
+        resource["result"]["contents"][0]["text"],
+        "fixture resource"
+    );
+
+    let prompt = api()
+        .handle_json_rpc(
+            &runtime,
+            protected_request(json!({
+                "jsonrpc": "2.0",
+                "id": "prompt",
+                "method": "prompts/get",
+                "params": {
+                    "name": "summarize",
+                    "arguments": { "topic": "AgentCast" }
+                }
+            })),
+        )
+        .await;
+    let ProtectedMcpJsonRpcResponse::JsonRpc(prompt) = prompt else {
+        panic!("expected prompt");
+    };
+    assert_eq!(
+        prompt["result"]["messages"][0]["content"]["text"],
+        "Summarize AgentCast"
+    );
+}
+
+fn protected_request(body: serde_json::Value) -> ProtectedMcpJsonRpcRequest {
+    ProtectedMcpJsonRpcRequest {
+        host: "mcp.example.test".to_string(),
+        path: "/syslog".to_string(),
+        public_origin: "https://mcp.example.test".to_string(),
+        authorization: Some(
+            "Bearer sub=user-1;aud=https://mcp.example.test/syslog;scope=mcp:read".to_string(),
+        ),
+        body,
+    }
+}
+
+async fn runtime() -> McpRuntime {
+    let fixture = format!(
+        "{}/../agent-mcp/src/fixtures/mcp_echo_server.js",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    McpRuntime::start(vec![McpServerConfig {
+        id: McpServerId::new("syslog"),
+        name: "Syslog".to_string(),
+        enabled: true,
+        transport: McpTransportConfig::Stdio {
+            command: "node".to_string(),
+            args: vec![fixture],
+            env: BTreeMap::new(),
+        },
+        env_keys: Vec::new(),
+    }])
+    .await
 }

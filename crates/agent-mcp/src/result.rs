@@ -21,11 +21,27 @@ impl McpToolResult {
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum McpToolContent {
-    Text { text: String },
-    Image { mime_type: String, data: String },
-    Resource { uri: String, text: Option<String>, blob: Option<String>, mime_type: Option<String> },
-    ResourceLink { uri: String, name: String },
-    Audio { mime_type: String, data: String },
+    Text {
+        text: String,
+    },
+    Image {
+        mime_type: String,
+        data: String,
+    },
+    Resource {
+        uri: String,
+        text: Option<String>,
+        blob: Option<String>,
+        mime_type: Option<String>,
+    },
+    ResourceLink {
+        uri: String,
+        name: String,
+    },
+    Audio {
+        mime_type: String,
+        data: String,
+    },
     Unknown,
 }
 
