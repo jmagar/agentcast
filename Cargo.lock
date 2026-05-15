@@ -42,6 +42,7 @@ dependencies = [
  "agent-protocol",
  "agent-registry",
  "agent-runtime",
+ "agent-search",
  "anyhow",
  "axum",
  "futures",
