@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
 pub struct McpServerId(String);
 
