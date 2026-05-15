@@ -12,9 +12,13 @@ pub struct ScopeSet {
 }
 
 impl ScopeSet {
+    pub fn empty() -> Self {
+        Self { scopes: Vec::new() }
+    }
+
     pub fn parse(raw: &str) -> Result<Self, ScopeError> {
         if raw.is_empty() {
-            return Ok(Self { scopes: Vec::new() });
+            return Ok(Self::empty());
         }
 
         if raw.split(' ').any(str::is_empty) {

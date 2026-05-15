@@ -1,5 +1,5 @@
 use crate::GatewayError;
-use agent_auth::ScopeSet;
+use agent_auth::{AuthDecision, BearerClaims, ScopeSet};
 use agent_protocol::McpServerId;
 use std::collections::BTreeMap;
 
@@ -41,6 +41,15 @@ impl ResolvedProtectedRoute {
             scopes_supported: self.required_scopes.clone(),
             bearer_methods_supported: vec!["header".to_string()],
         }
+    }
+
+    pub fn authorize(&self, claims: Option<&BearerClaims>, public_origin: &str) -> AuthDecision {
+        AuthDecision::authorize_route(
+            claims,
+            &self.resource_uri,
+            &format!("{public_origin}{}", self.metadata_path),
+            &self.required_scopes,
+        )
     }
 }
 

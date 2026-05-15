@@ -1,5 +1,6 @@
 use super::*;
 use agent_auth::ScopeSet;
+use agent_auth::{AuthDecision, BearerClaims};
 use agent_protocol::McpServerId;
 
 fn route(name: &str, host: &str, path: &str) -> ProtectedRouteConfig {
@@ -96,4 +97,37 @@ fn projects_protected_resource_metadata() {
         "https://auth.example.test"
     );
     assert_eq!(metadata.scopes_supported.as_slice(), &["mcp:read"]);
+}
+
+#[test]
+fn route_authorization_rejects_missing_bearer_before_dispatch() {
+    let index =
+        ProtectedRouteIndex::from_routes(vec![route("syslog", "mcp.example.test", "/syslog")])
+            .expect("route index");
+    let resolved = index
+        .resolve("mcp.example.test", "/syslog/messages")
+        .expect("route");
+
+    let decision = resolved.authorize(None, "https://mcp.example.test");
+
+    assert!(matches!(decision, AuthDecision::Unauthorized(_)));
+}
+
+#[test]
+fn route_authorization_allows_matching_subject() {
+    let index =
+        ProtectedRouteIndex::from_routes(vec![route("syslog", "mcp.example.test", "/syslog")])
+            .expect("route index");
+    let resolved = index
+        .resolve("mcp.example.test", "/syslog/messages")
+        .expect("route");
+    let claims = BearerClaims {
+        subject: "user-1".to_string(),
+        audience: "https://mcp.example.test/syslog".to_string(),
+        scopes: ScopeSet::parse("mcp:read").expect("scope"),
+    };
+
+    let decision = resolved.authorize(Some(&claims), "https://mcp.example.test");
+
+    assert!(decision.is_authorized());
 }

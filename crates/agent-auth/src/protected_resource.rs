@@ -47,4 +47,8 @@ impl AuthChallenge {
         }
         format!("Bearer {}", parts.join(", "))
     }
+
+    pub fn error(&self) -> Option<&str> {
+        self.error.as_deref()
+    }
 }
