@@ -46,6 +46,29 @@ fn jsonc_comments_do_not_strip_url_slashes_inside_strings() {
 }
 
 #[test]
+fn jsonc_block_comments_are_removed_without_touching_strings() {
+    let raw = r#"
+    {
+      /* block comment with "quoted" text */
+      "mcpServers": {
+        "remote": {
+          "url": "https://example.test/mcp/*literal*/stable"
+        }
+      }
+    }
+    "#;
+
+    let servers = parse_mcp_json(raw).expect("parse config");
+
+    match &servers[0].transport {
+        agent_protocol::McpTransportConfig::StreamableHttp { url, .. } => {
+            assert_eq!(url, "https://example.test/mcp/*literal*/stable");
+        }
+        agent_protocol::McpTransportConfig::Stdio { .. } => panic!("expected streamable http"),
+    }
+}
+
+#[test]
 fn mcp_servers_object_wins_over_servers_object() {
     let raw = r#"
     {

@@ -85,6 +85,7 @@ strip-ansi-escapes = "0.2"
 # crypto-ish basics, useful for token/session IDs and cache keys
 sha2 = "0.11"
 hex = "0.4"
+aes-gcm = { version = "0.10", features = ["std"] }
 
 # OpenAPI/docs later
 utoipa = { version = "5", features = ["axum_extras"] }

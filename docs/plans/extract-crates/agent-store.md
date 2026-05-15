@@ -15,12 +15,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0107-modelcontextprotocol-io-specification-2025-11-25-server-tools.md"
   - "docs/references/mcp/docs/markdown/0175-modelcontextprotocol-io-specification-2025-11-25-server-prompts.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-store Extraction Implementation Plan
@@ -38,6 +38,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 For v0, only persist what the MCP launcher needs: config-adjacent cache metadata, discovered catalog snapshots, install-plan state, and invocation/audit records when required by contracts. Avoid broad chat/session storage until ACP is promoted.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-store` is implemented for the current v0 persistence needs: OAuth persistence for the gateway path, in-memory store behavior for default tests, SQLite pending state, AES-GCM encrypted access/refresh credentials, persisted dynamic OAuth client registrations, removed-upstream cleanup, a generic SQLite opener with owner-only file permissions, idempotent schema migrations, and catalog snapshot round-trip persistence.
+
+Continue with install-plan/audit records only when CLI/API surfaces need durable history beyond current config, registry, marketplace, and gateway flows.
 
 ## Lab Evidence Read
 

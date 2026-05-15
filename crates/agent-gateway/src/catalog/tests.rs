@@ -1,27 +1,51 @@
 use super::*;
 use agent_protocol::{McpServerId, McpToolId, ServerStatus};
 use agent_runtime::{RuntimeCatalogSnapshot, RuntimeTool};
-use serde_json::json;
+use serde_json::{Value, json};
 
-#[test]
-fn projects_runtime_tools_to_stable_actions() {
-    let snapshot = RuntimeCatalogSnapshot {
-        server_id: McpServerId::new("local"),
-        server_name: "Local".to_string(),
+fn tool(
+    id: &str,
+    name: &str,
+    title: Option<&str>,
+    description: Option<&str>,
+    input_schema: Value,
+) -> RuntimeTool {
+    RuntimeTool {
+        id: McpToolId::new(id),
+        name: name.to_string(),
+        title: title.map(str::to_string),
+        description: description.map(str::to_string),
+        input_schema,
+        output_schema: None,
+        annotations: None,
+    }
+}
+
+fn snapshot(server_id: &str, server_name: &str, tools: Vec<RuntimeTool>) -> RuntimeCatalogSnapshot {
+    RuntimeCatalogSnapshot {
+        server_id: McpServerId::new(server_id),
+        server_name: server_name.to_string(),
         status: ServerStatus::Healthy,
-        tools: vec![RuntimeTool {
-            id: McpToolId::new("echo"),
-            name: "echo".to_string(),
-            title: Some("Echo".to_string()),
-            description: Some("Return input".to_string()),
-            input_schema: json!({"type": "object"}),
-        }],
+        tools,
         resources: Vec::new(),
         resource_templates: Vec::new(),
         prompts: Vec::new(),
-    };
+    }
+}
 
-    let catalog = GatewayCatalog::from_snapshots(vec![snapshot]);
+#[test]
+fn projects_runtime_tools_to_stable_actions() {
+    let catalog = GatewayCatalog::from_snapshots(vec![snapshot(
+        "local",
+        "Local",
+        vec![tool(
+            "echo",
+            "echo",
+            Some("Echo"),
+            Some("Return input"),
+            json!({"type": "object"}),
+        )],
+    )]);
 
     assert_eq!(catalog.actions.len(), 1);
     assert_eq!(catalog.actions[0].id.as_str(), "mcp:local:echo");
@@ -32,36 +56,16 @@ fn projects_runtime_tools_to_stable_actions() {
 #[test]
 fn reports_duplicate_action_ids() {
     let snapshots = vec![
-        RuntimeCatalogSnapshot {
-            server_id: McpServerId::new("local"),
-            server_name: "Local".to_string(),
-            status: ServerStatus::Healthy,
-            tools: vec![RuntimeTool {
-                id: McpToolId::new("echo"),
-                name: "echo".to_string(),
-                title: None,
-                description: None,
-                input_schema: json!({}),
-            }],
-            resources: Vec::new(),
-            resource_templates: Vec::new(),
-            prompts: Vec::new(),
-        },
-        RuntimeCatalogSnapshot {
-            server_id: McpServerId::new("local"),
-            server_name: "Local Duplicate".to_string(),
-            status: ServerStatus::Healthy,
-            tools: vec![RuntimeTool {
-                id: McpToolId::new("echo"),
-                name: "echo-alt".to_string(),
-                title: None,
-                description: None,
-                input_schema: json!({}),
-            }],
-            resources: Vec::new(),
-            resource_templates: Vec::new(),
-            prompts: Vec::new(),
-        },
+        snapshot(
+            "local",
+            "Local",
+            vec![tool("echo", "echo", None, None, json!({}))],
+        ),
+        snapshot(
+            "local",
+            "Local Duplicate",
+            vec![tool("echo", "echo-alt", None, None, json!({}))],
+        ),
     ];
 
     let catalog = GatewayCatalog::from_snapshots(snapshots);
@@ -73,21 +77,17 @@ fn reports_duplicate_action_ids() {
 
 #[test]
 fn catalog_exports_search_documents_without_ranking() {
-    let catalog = GatewayCatalog::from_snapshots(vec![RuntimeCatalogSnapshot {
-        server_id: McpServerId::new("git"),
-        server_name: "Git".to_string(),
-        status: ServerStatus::Healthy,
-        tools: vec![RuntimeTool {
-            id: McpToolId::new("status"),
-            name: "status".to_string(),
-            title: Some("Git status".to_string()),
-            description: Some("Inspect working tree".to_string()),
-            input_schema: json!({"type": "object"}),
-        }],
-        resources: Vec::new(),
-        resource_templates: Vec::new(),
-        prompts: Vec::new(),
-    }]);
+    let catalog = GatewayCatalog::from_snapshots(vec![snapshot(
+        "git",
+        "Git",
+        vec![tool(
+            "status",
+            "status",
+            Some("Git status"),
+            Some("Inspect working tree"),
+            json!({"type": "object"}),
+        )],
+    )]);
 
     let docs = catalog.search_documents();
 
@@ -97,4 +97,41 @@ fn catalog_exports_search_documents_without_ranking() {
     assert_eq!(docs[0].description.as_deref(), Some("Inspect working tree"));
     assert!(docs[0].metadata.contains(&"git".to_string()));
     assert!(!docs[0].catalog_hash.is_empty());
+}
+
+#[test]
+fn exposure_policy_filters_actions_before_search_and_routing() {
+    let catalog = GatewayCatalog::from_snapshots_with_policy(
+        vec![snapshot(
+            "git",
+            "Git",
+            vec![
+                tool(
+                    "status",
+                    "status",
+                    Some("Git status"),
+                    Some("Inspect working tree"),
+                    json!({"type": "object"}),
+                ),
+                tool(
+                    "push",
+                    "push",
+                    Some("Git push"),
+                    Some("Push commits"),
+                    json!({"type": "object"}),
+                ),
+            ],
+        )],
+        &GatewayExposurePolicy::default().deny_tool(McpToolId::new("push")),
+    );
+
+    assert_eq!(
+        catalog
+            .actions
+            .iter()
+            .map(|action| action.id.as_str())
+            .collect::<Vec<_>>(),
+        ["mcp:git:status"]
+    );
+    assert_eq!(catalog.search_documents().len(), 1);
 }

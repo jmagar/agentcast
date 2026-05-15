@@ -12,6 +12,8 @@ pub struct OAuthProviderMetadata {
     pub issuer: String,
     pub authorization_endpoint: String,
     pub token_endpoint: String,
+    #[serde(default)]
+    pub registration_endpoint: Option<String>,
     pub code_challenge_methods_supported: Vec<String>,
     pub scopes_supported: ScopeSet,
 }
@@ -92,6 +94,33 @@ pub struct OAuthCredential {
     pub scopes: ScopeSet,
     pub expires_at_unix: u64,
     pub refresh_failed: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub struct OAuthRefreshRequest {
+    pub subject: String,
+    pub upstream_id: String,
+    pub refresh_token: String,
+    pub scopes: ScopeSet,
+    pub now_unix: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub struct OAuthRefreshResult {
+    pub access_token: String,
+    pub refresh_token: Option<String>,
+    pub scopes: Option<ScopeSet>,
+    pub expires_at_unix: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub struct OAuthClientRegistration {
+    pub subject: String,
+    pub upstream_id: String,
+    pub client_id: String,
+    pub client_secret: Option<String>,
+    pub client_id_issued_at_unix: Option<u64>,
+    pub client_secret_expires_at_unix: Option<u64>,
 }
 
 impl OAuthCredential {
@@ -190,4 +219,10 @@ pub enum OAuthError {
     MissingCode,
     #[error("OAuth state was not found")]
     StateNotFound,
+    #[error("OAuth credential was not found")]
+    CredentialNotFound,
+    #[error("OAuth credential does not include a refresh token")]
+    MissingRefreshToken,
+    #[error("OAuth refresh failed")]
+    RefreshFailed,
 }

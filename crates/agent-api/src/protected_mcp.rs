@@ -1,20 +1,33 @@
-use agent_auth::{AuthDecision, BearerClaims, ProtectedResourceMetadata};
+use agent_auth::{
+    AuthDecision, BearerTokenVerifier, FixtureBearerTokenVerifier, ProtectedResourceMetadata,
+};
 use agent_gateway::{ProtectedRouteIndex, ProtectedRouteTarget};
 use agent_protocol::{McpServerId, McpToolId};
-use agent_runtime::{McpRuntime, RuntimeCatalogSnapshot, RuntimeError, ToolCallRequest};
+use agent_runtime::{
+    McpRuntime, RuntimeCatalogSnapshot, RuntimeError, RuntimeRequestAuth, ToolCallRequest,
+};
 use serde_json::{Map, Value, json};
+use std::sync::Arc;
 
 #[cfg(test)]
 mod tests;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ProtectedMcpRouteApi {
     routes: ProtectedRouteIndex,
+    verifier: Arc<dyn BearerTokenVerifier>,
 }
 
 impl ProtectedMcpRouteApi {
     pub fn new(routes: ProtectedRouteIndex) -> Self {
-        Self { routes }
+        Self::new_with_verifier(routes, Arc::new(FixtureBearerTokenVerifier))
+    }
+
+    pub fn new_with_verifier(
+        routes: ProtectedRouteIndex,
+        verifier: Arc<dyn BearerTokenVerifier>,
+    ) -> Self {
+        Self { routes, verifier }
     }
 
     pub fn handle(&self, request: ProtectedMcpRequest) -> ProtectedMcpResponse {
@@ -34,7 +47,7 @@ impl ProtectedMcpRouteApi {
         let claims = request
             .authorization
             .as_deref()
-            .and_then(|header| BearerClaims::from_authorization_header(header).ok());
+            .and_then(|header| self.verifier.verify(header).ok());
 
         match route.authorize(claims.as_ref(), &request.public_origin) {
             AuthDecision::Authorized(subject) => ProtectedMcpResponse::DispatchAllowed {
@@ -71,7 +84,31 @@ impl ProtectedMcpRouteApi {
 
         let ProtectedRouteTarget::UpstreamMcp { server_id } = target;
         ProtectedMcpJsonRpcResponse::JsonRpc(
-            dispatch_json_rpc(runtime, &server_id, request.body).await,
+            dispatch_json_rpc(runtime, &server_id, request.body, None).await,
+        )
+    }
+
+    pub async fn handle_json_rpc_with_upstream_credential(
+        &self,
+        runtime: &McpRuntime,
+        request: ProtectedMcpJsonRpcRequest,
+        upstream_access_token: Option<String>,
+    ) -> ProtectedMcpJsonRpcResponse {
+        let authorization = self.handle(ProtectedMcpRequest {
+            host: request.host,
+            path: request.path,
+            public_origin: request.public_origin,
+            authorization: request.authorization,
+        });
+
+        let ProtectedMcpResponse::DispatchAllowed { target, .. } = authorization else {
+            return ProtectedMcpJsonRpcResponse::Rejected(authorization);
+        };
+
+        let ProtectedRouteTarget::UpstreamMcp { server_id } = target;
+        let auth = upstream_access_token.map(RuntimeRequestAuth::bearer);
+        ProtectedMcpJsonRpcResponse::JsonRpc(
+            dispatch_json_rpc(runtime, &server_id, request.body, auth.as_ref()).await,
         )
     }
 }
@@ -128,20 +165,26 @@ pub enum ResponseStatus {
     NotFound,
 }
 
-async fn dispatch_json_rpc(runtime: &McpRuntime, server_id: &McpServerId, body: Value) -> Value {
+async fn dispatch_json_rpc(
+    runtime: &McpRuntime,
+    server_id: &McpServerId,
+    body: Value,
+    auth: Option<&RuntimeRequestAuth>,
+) -> Value {
     let id = body.get("id").cloned().unwrap_or(Value::Null);
     let Some(method) = body.get("method").and_then(Value::as_str) else {
         return json_rpc_error(id, -32600, "missing JSON-RPC method");
     };
 
     let result = match method {
+        "initialize" => initialize(runtime, server_id),
         "tools/list" => list_tools(runtime, server_id),
-        "tools/call" => call_tool(runtime, server_id, &body).await,
+        "tools/call" => call_tool(runtime, server_id, &body, auth).await,
         "resources/list" => list_resources(runtime, server_id),
         "resources/templates/list" => list_resource_templates(runtime, server_id),
-        "resources/read" => read_resource(runtime, server_id, &body).await,
+        "resources/read" => read_resource(runtime, server_id, &body, auth).await,
         "prompts/list" => list_prompts(runtime, server_id),
-        "prompts/get" => get_prompt(runtime, server_id, &body).await,
+        "prompts/get" => get_prompt(runtime, server_id, &body, auth).await,
         _ => Err(JsonRpcDispatchError::MethodNotFound(format!(
             "method not found: {method}"
         ))),
@@ -153,6 +196,33 @@ async fn dispatch_json_rpc(runtime: &McpRuntime, server_id: &McpServerId, body: 
         Err(JsonRpcDispatchError::MethodNotFound(message)) => json_rpc_error(id, -32601, &message),
         Err(JsonRpcDispatchError::Runtime(error)) => json_rpc_error(id, -32000, &error.to_string()),
     }
+}
+
+fn initialize(
+    runtime: &McpRuntime,
+    server_id: &McpServerId,
+) -> Result<Value, JsonRpcDispatchError> {
+    let snapshot = snapshot(runtime, server_id)?;
+    let mut capabilities = Map::new();
+    if !snapshot.tools.is_empty() {
+        capabilities.insert("tools".to_string(), json!({}));
+    }
+    if !snapshot.resources.is_empty() || !snapshot.resource_templates.is_empty() {
+        capabilities.insert("resources".to_string(), json!({}));
+    }
+    if !snapshot.prompts.is_empty() {
+        capabilities.insert("prompts".to_string(), json!({}));
+    }
+
+    Ok(json!({
+        "protocolVersion": "2025-11-25",
+        "capabilities": capabilities,
+        "serverInfo": {
+            "name": "agentcast-gateway",
+            "title": "AgentCast Gateway",
+            "version": env!("CARGO_PKG_VERSION")
+        }
+    }))
 }
 
 fn list_tools(
@@ -179,6 +249,7 @@ async fn call_tool(
     runtime: &McpRuntime,
     server_id: &McpServerId,
     body: &Value,
+    auth: Option<&RuntimeRequestAuth>,
 ) -> Result<Value, JsonRpcDispatchError> {
     let params = params(body)?;
     let name = required_string(params, "name")?;
@@ -191,6 +262,7 @@ async fn call_tool(
             server_id: server_id.clone(),
             tool_id: McpToolId::new(name),
             arguments,
+            auth: auth.cloned(),
         })
         .await?;
     Ok(response.output)
@@ -243,9 +315,17 @@ async fn read_resource(
     runtime: &McpRuntime,
     server_id: &McpServerId,
     body: &Value,
+    auth: Option<&RuntimeRequestAuth>,
 ) -> Result<Value, JsonRpcDispatchError> {
     let uri = required_string(params(body)?, "uri")?;
-    let response = runtime.read_resource(server_id, uri).await?;
+    let response = match auth {
+        Some(auth) => {
+            runtime
+                .read_resource_with_bearer(server_id, uri, auth.bearer_token.clone())
+                .await?
+        }
+        None => runtime.read_resource(server_id, uri).await?,
+    };
     Ok(serde_json::to_value(response).unwrap_or(Value::Null))
 }
 
@@ -273,6 +353,7 @@ async fn get_prompt(
     runtime: &McpRuntime,
     server_id: &McpServerId,
     body: &Value,
+    auth: Option<&RuntimeRequestAuth>,
 ) -> Result<Value, JsonRpcDispatchError> {
     let params = params(body)?;
     let name = required_string(params, "name")?;
@@ -280,10 +361,16 @@ async fn get_prompt(
         .get("arguments")
         .and_then(|value| value.as_object())
         .cloned();
-    runtime
-        .get_prompt(server_id, name, arguments)
-        .await
-        .map_err(Into::into)
+    match auth {
+        Some(auth) => runtime
+            .get_prompt_with_bearer(server_id, name, arguments, auth.bearer_token.clone())
+            .await
+            .map_err(Into::into),
+        None => runtime
+            .get_prompt(server_id, name, arguments)
+            .await
+            .map_err(Into::into),
+    }
 }
 
 fn snapshot(

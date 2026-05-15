@@ -3,6 +3,8 @@ use agent_runtime::RuntimeCatalogSnapshot;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+use crate::GatewayExposurePolicy;
+
 #[cfg(test)]
 mod tests;
 
@@ -23,12 +25,22 @@ pub type GatewaySearchDocument = agent_search::SearchDocument;
 
 impl GatewayCatalog {
     pub fn from_snapshots(snapshots: Vec<RuntimeCatalogSnapshot>) -> Self {
+        Self::from_snapshots_with_policy(snapshots, &GatewayExposurePolicy::default())
+    }
+
+    pub fn from_snapshots_with_policy(
+        snapshots: Vec<RuntimeCatalogSnapshot>,
+        exposure_policy: &GatewayExposurePolicy,
+    ) -> Self {
         let mut actions_by_id = BTreeMap::<LauncherActionId, LauncherAction>::new();
         let mut collisions = Vec::new();
 
         for snapshot in snapshots {
             for tool in snapshot.tools {
                 let action_id = LauncherActionId::from_server_tool(&snapshot.server_id, &tool.id);
+                if !exposure_policy.allows(&action_id, &snapshot.server_id, &tool.id) {
+                    continue;
+                }
                 let display_name = tool.title.clone().unwrap_or(tool.name.clone());
                 let action = LauncherAction {
                     id: action_id.clone(),

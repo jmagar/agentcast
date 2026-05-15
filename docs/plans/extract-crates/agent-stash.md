@@ -14,12 +14,12 @@ upstream_refs:
   - "docs/references/jmagar/jmagar-lab.xml"
   - "docs/references/mcp/docs/markdown/0045-modelcontextprotocol-io-specification-2025-11-25-server-resources.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-stash Extraction Implementation Plan
@@ -37,6 +37,10 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 `agent-stash` is post-v0 unless explicitly promoted in `docs/MVP.md`. Create the boundary now so saved prompts, action templates, references, and history bundles do not get mixed into runtime or gateway crates.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-stash` implements the post-v0 contract layer called for by this plan: safe relative stash paths, saved item metadata, item kind and drift status DTOs, revision parent tracking, and import/export manifest DTOs. Runtime invocation, gateway search, persistence workflows, API/CLI routes, UI rendering, and Lab service actions remain outside this crate.
 
 ## Lab Evidence Read
 

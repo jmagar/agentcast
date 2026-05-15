@@ -1,14 +1,9 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+mod error;
+mod event;
+mod permission;
+mod session;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use error::{AcpError, AcpResult};
+pub use event::{AcpEvent, AcpEventKind};
+pub use permission::{PermissionOption, PermissionOptionKind};
+pub use session::{AcpPromptRequest, AcpSessionCommand, AcpSessionId};

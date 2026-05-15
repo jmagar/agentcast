@@ -1,21 +1,21 @@
-//! Fleet and remote runtime coordination for AgentCast.
+//! Fleet and remote runtime coordination contracts for AgentCast.
 //!
-//! Fleet is post-v0. It will own remote nodes, device/runtime enrollment,
-//! remote health, and execution target coordination when those capabilities
-//! are promoted beyond the local MCP launcher.
+//! Fleet remains post-v0. This crate intentionally exposes transport-neutral
+//! node, heartbeat, capability, and remote execution DTOs without importing Lab
+//! node policy, service inventory, or local MCP process lifecycle behavior.
+
+mod capability;
+mod execution;
+mod heartbeat;
+mod node;
+
+pub use capability::{CapabilityKind, CapabilitySummary};
+pub use execution::{ExecutionTarget, RemoteExecutionRequest};
+pub use heartbeat::{FleetHeartbeat, FleetStatus};
+pub use node::{FleetNode, NodeId};
 
 /// Returns the crate's public boundary label for diagnostics.
 #[must_use]
 pub fn crate_boundary() -> &'static str {
     "agent-fleet"
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn exposes_boundary_label() {
-        assert_eq!(crate_boundary(), "agent-fleet");
-    }
 }

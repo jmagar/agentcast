@@ -16,7 +16,6 @@ path = "src/main.rs"
 agent-core = { path = "../agent-core" }
 agent-config = { path = "../agent-config" }
 agent-protocol = { path = "../agent-protocol" }
-agent-acp = { path = "../agent-acp" }
 agent-mcp = { path = "../agent-mcp" }
 agent-registry = { path = "../agent-registry" }
 agent-marketplace = { path = "../agent-marketplace" }
@@ -25,9 +24,11 @@ agent-gateway = { path = "../agent-gateway" }
 agent-auth = { path = "../agent-auth" }
 agent-api = { path = "../agent-api" }
 agent-cli = { path = "../agent-cli" }
+agent-store = { path = "../agent-store" }
 
 axum.workspace = true
 tokio.workspace = true
+async-trait.workspace = true
 clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -38,3 +39,4 @@ tracing-subscriber.workspace = true
 uuid.workspace = true
 jiff.workspace = true
 url.workspace = true
+hex.workspace = true

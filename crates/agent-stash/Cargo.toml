@@ -9,14 +9,6 @@ authors.workspace = true
 description = "AgentCast stash, saved artifacts, history, and reusable context collections."
 
 [dependencies]
-agent-core = { path = "../agent-core" }
-agent-protocol = { path = "../agent-protocol" }
-agent-store = { path = "../agent-store" }
-
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-tracing.workspace = true
-uuid.workspace = true
-jiff.workspace = true
-

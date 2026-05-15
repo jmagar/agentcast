@@ -14,12 +14,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0064-modelcontextprotocol-io-registry-package-types.md"
   - "docs/references/mcp/docs/markdown/0147-modelcontextprotocol-io-registry-quickstart.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-registry Extraction Implementation Plan
@@ -37,6 +37,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 For v0, registry means the official MCP Registry only.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-registry` has the v0 MCP Registry foundation extracted. The crate now includes official MCP Registry response DTOs, normalized server/package/remote models with provenance, status, freshness, and publish/update metadata, stable `mcp:{name}` cache keys, an HTTP client for `/v0.1/servers` with search/limit/cursor query support and paginated `list_all_servers`, in-memory cache ownership with fetched-at freshness metadata, deterministic local search, and source-side tests for normalization, pagination, cache replacement, freshness, and search behavior.
+
+Continue with durable registry cache/audit persistence if a file or database-backed cache is promoted into v0. ACP Registry behavior remains post-v0.
 
 ## Lab Source Files
 

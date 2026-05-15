@@ -16,12 +16,12 @@ upstream_refs:
   - "docs/references/mcporter/docs/cli-reference.md"
   - "docs/references/mcporter/docs/tool-calling.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-cli Extraction Implementation Plan
@@ -39,6 +39,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 The CLI is the first preferred surface for the MCP launcher MVP.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-cli` is partially implemented with gateway handler and view helpers over the shared gateway/runtime path. The `agentcast` binary also exposes real `gateway actions`, `gateway search`, `gateway call`, `gateway read-resource`, `gateway get-prompt`, `gateway protected-route list/add/remove/status/test`, `gateway oauth`, `registry search`, `marketplace plan-mcp`, and `marketplace apply-mcp` subcommands with JSON output over shared services. Gateway action/search commands also support `--output text` human tables while preserving JSON as the default.
+
+Continue with config import/adoption command polish and broader human output coverage. Keep command handlers as surface glue.
 
 ## Lab Source Files
 

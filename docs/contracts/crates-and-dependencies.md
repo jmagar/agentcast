@@ -13,12 +13,12 @@ related:
   - "docs/CRATE_BOUNDARIES.md"
   - "docs/CODE_ORGANIZATION.md"
   - "docs/specs/crates-and-dependencies.md"
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "e0bd04f"
-review_basis: "local workspace crate and dependency policy"
+modified_at_commit: "d327495"
+review_basis: "local workspace crate and dependency policy plus gateway OAuth token exchange implementation"
 ---
 
 # Crates And Dependencies Contract
@@ -97,6 +97,7 @@ External protocol SDK ownership is exclusive unless a future decision expands it
 - process supervision dependencies belong in `agent-runtime`.
 - SQLite dependencies belong in `agent-store`.
 - registry HTTP client dependencies belong in `agent-registry` unless another crate has an explicit external fetch responsibility.
+- OAuth token endpoint HTTP client dependencies belong in `agent-gateway` because upstream OAuth lifecycle orchestration is gateway-owned.
 
 Other crates must consume AgentCast-owned models and services instead of importing those external SDKs directly.
 
@@ -180,4 +181,3 @@ Dependency-policy changes should also run the dependency audit once it exists:
 ```bash
 cargo xtask audit-deps
 ```
-

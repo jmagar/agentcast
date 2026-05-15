@@ -12,7 +12,6 @@ description = "AgentCast HTTP API routes, DTOs, server state, and Axum integrati
 agent-core = { path = "../agent-core" }
 agent-config = { path = "../agent-config" }
 agent-protocol = { path = "../agent-protocol" }
-agent-acp = { path = "../agent-acp" }
 agent-mcp = { path = "../agent-mcp" }
 agent-registry = { path = "../agent-registry" }
 agent-marketplace = { path = "../agent-marketplace" }

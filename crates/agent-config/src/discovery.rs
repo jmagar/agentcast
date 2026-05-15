@@ -20,9 +20,25 @@ pub struct DiscoveredMcpServer {
 pub fn discover_known_mcp_configs(home: &Path) -> Vec<DiscoveredMcpServer> {
     let mut discovered = Vec::new();
     discovered.extend(discover_claude_code(home));
+    discovered.extend(discover_claude_desktop(home));
     discovered.extend(discover_codex(home));
     discovered.extend(discover_gemini(home));
+    discovered.extend(discover_cursor(home));
+    discovered.extend(discover_vscode(home));
+    discovered.extend(discover_windsurf(home));
+    discovered.extend(discover_opencode(home));
     dedupe_first_seen(discovered)
+}
+
+fn config_roots(home: &Path) -> Vec<PathBuf> {
+    let mut roots = vec![home.join(".config")];
+    if let Some(xdg) = std::env::var_os("XDG_CONFIG_HOME") {
+        let path = PathBuf::from(xdg);
+        if path != roots[0] {
+            roots.push(path);
+        }
+    }
+    roots
 }
 
 fn discover_claude_code(home: &Path) -> Vec<DiscoveredMcpServer> {
@@ -43,6 +59,27 @@ fn discover_claude_code(home: &Path) -> Vec<DiscoveredMcpServer> {
         discovered.extend(discover_json_path(&path, "claude-code", true));
     }
     discovered
+}
+
+fn discover_claude_desktop(home: &Path) -> Vec<DiscoveredMcpServer> {
+    let mut paths = config_roots(home)
+        .into_iter()
+        .map(|root| root.join("Claude").join("claude_desktop_config.json"))
+        .collect::<Vec<_>>();
+    paths.extend([
+        home.join("Library")
+            .join("Application Support")
+            .join("Claude")
+            .join("claude_desktop_config.json"),
+        home.join("AppData")
+            .join("Roaming")
+            .join("Claude")
+            .join("claude_desktop_config.json"),
+    ]);
+    paths
+        .into_iter()
+        .flat_map(|path| discover_json_path(&path, "claude-desktop", false))
+        .collect()
 }
 
 fn discover_codex(home: &Path) -> Vec<DiscoveredMcpServer> {
@@ -81,6 +118,49 @@ fn discover_gemini(home: &Path) -> Vec<DiscoveredMcpServer> {
     .collect()
 }
 
+fn discover_cursor(home: &Path) -> Vec<DiscoveredMcpServer> {
+    [
+        home.join(".cursor").join("mcp.json"),
+        home.join(".cursor").join("mcp_config.json"),
+    ]
+    .into_iter()
+    .flat_map(|path| discover_json_path(&path, "cursor", false))
+    .collect()
+}
+
+fn discover_vscode(home: &Path) -> Vec<DiscoveredMcpServer> {
+    let mut paths = Vec::new();
+    for root in config_roots(home) {
+        paths.push(root.join("Code").join("User").join("mcp.json"));
+        paths.push(root.join("Code - Insiders").join("User").join("mcp.json"));
+        paths.push(root.join("Antigravity").join("User").join("mcp.json"));
+    }
+    paths.push(home.join(".vscode").join("mcp.json"));
+    paths
+        .into_iter()
+        .flat_map(|path| discover_json_path(&path, "vscode", false))
+        .collect()
+}
+
+fn discover_windsurf(home: &Path) -> Vec<DiscoveredMcpServer> {
+    [
+        home.join(".windsurf").join("mcp.json"),
+        home.join(".codeium")
+            .join("windsurf")
+            .join("mcp_config.json"),
+    ]
+    .into_iter()
+    .flat_map(|path| discover_json_path(&path, "windsurf", false))
+    .collect()
+}
+
+fn discover_opencode(home: &Path) -> Vec<DiscoveredMcpServer> {
+    [home.join(".opencode").join("mcp.json")]
+        .into_iter()
+        .flat_map(|path| discover_json_path(&path, "opencode", false))
+        .collect()
+}
+
 fn discover_json_path(
     path: &Path,
     source_client: &str,
@@ -103,7 +183,8 @@ fn discover_json_raw(
     } else {
         parse_mcp_json(raw)?
     };
-    let value = serde_json::from_str::<Value>(raw).unwrap_or(Value::Null);
+    let stripped = crate::mcp_json::strip_jsonc_comments(raw);
+    let value = serde_json::from_str::<Value>(&stripped).unwrap_or(Value::Null);
     Ok(configs
         .into_iter()
         .map(|mut config| {

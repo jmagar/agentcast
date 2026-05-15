@@ -16,12 +16,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0064-modelcontextprotocol-io-registry-package-types.md"
   - "docs/references/mcp/docs/markdown/0147-modelcontextprotocol-io-registry-quickstart.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-marketplace Extraction Implementation Plan
@@ -39,6 +39,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 For v0, marketplace is limited to official MCP Registry results and previewable MCP server install plans.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-marketplace` has the v0 MCP Registry install-planning foundation extracted. The crate now defines deterministic install plans, install steps, conflict vocabulary, stable error kinds, MCP install safety checks, registry URL validation, a planner that converts normalized MCP Registry stdio and remote HTTP packages into previewable AgentCast MCP upstream additions plus runtime/env preparation steps, env-value/default/required validation, `.env` merge preparation, and an apply bridge that mutates an `agent-config::AgentConfig` through `agent-config` upstream mutation helpers.
+
+Continue with file-level apply CLI/API integration through `agent-config::write_to_path` and `agent-config::merge_env_file`; marketplace should keep producing plans and object-level mutations, while direct file writes remain outside this crate.
 
 ## Lab Source Files
 

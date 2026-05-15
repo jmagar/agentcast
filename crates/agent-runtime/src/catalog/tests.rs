@@ -13,6 +13,8 @@ fn runtime_snapshot_preserves_tool_metadata() {
             title: Some("Echo".to_string()),
             description: Some("Return input".to_string()),
             input_schema: json!({"type": "object"}),
+            output_schema: None,
+            annotations: None,
         }],
         resources: Vec::new(),
         resource_templates: Vec::new(),
@@ -22,4 +24,6 @@ fn runtime_snapshot_preserves_tool_metadata() {
     assert_eq!(snapshot.server_id.as_str(), "local");
     assert_eq!(snapshot.tools[0].id.as_str(), "echo");
     assert_eq!(snapshot.tools[0].input_schema["type"], "object");
+    assert_eq!(snapshot.tools[0].output_schema, None);
+    assert_eq!(snapshot.tools[0].annotations, None);
 }

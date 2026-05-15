@@ -18,12 +18,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0111-modelcontextprotocol-io-specification-2025-11-25-schema.md"
   - "docs/references/mcp/docs/markdown/0175-modelcontextprotocol-io-specification-2025-11-25-server-prompts.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-ui-contracts Extraction Implementation Plan
@@ -41,6 +41,10 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 `agent-ui-contracts` can remain skeletal until the API/web/desktop surfaces need shared view models. For v0, prefer minimal DTOs for launcher action lists, server status, invocation results, and install-plan preview if these appear in both API and UI.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-ui-contracts` implements stable client-facing view DTOs for gateway actions/status, registry results, marketplace install previews, and invocation result/error views. It remains a DTO-only crate and does not own API routes, UI rendering, runtime behavior, or protocol SDK adapters.
 
 ## Lab Evidence Read
 

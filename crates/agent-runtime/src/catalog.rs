@@ -26,6 +26,8 @@ pub struct RuntimeTool {
     pub title: Option<String>,
     pub description: Option<String>,
     pub input_schema: Value,
+    pub output_schema: Option<Value>,
+    pub annotations: Option<Value>,
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]

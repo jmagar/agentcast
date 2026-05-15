@@ -9,17 +9,5 @@ authors.workspace = true
 description = "AgentCast fleet and remote runtime coordination for post-v0 node/device execution."
 
 [dependencies]
-agent-core = { path = "../agent-core" }
-agent-config = { path = "../agent-config" }
-agent-protocol = { path = "../agent-protocol" }
-agent-auth = { path = "../agent-auth" }
-
-tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-thiserror.workspace = true
-tracing.workspace = true
-uuid.workspace = true
-jiff.workspace = true
-url.workspace = true
-

@@ -15,12 +15,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0088-modelcontextprotocol-io-specification-2025-11-25-basic-transports.md"
   - "docs/references/mcp/docs/markdown/0107-modelcontextprotocol-io-specification-2025-11-25-server-tools.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-server Extraction Implementation Plan
@@ -38,6 +38,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 The server crate is needed once CLI command dispatch and optional HTTP serving are ready.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-server` is partially implemented: the `agentcast` binary can compose discovered upstream config, runtime startup, gateway state, protected route fixtures, OAuth fixtures, protected-route/OAuth CLI command dispatch including JSON file-backed list/add/remove/status/test, registry search, marketplace MCP install-plan preview/apply dispatch through `agent-config`, optional marketplace env JSON and restricted `.env` merge, HTTP serving with graceful shutdown, and `--mcp-stdio` serving of AgentCast gateway list/search/call MCP tools.
+
+Continue with config path strategy, production serve flags, logging and tracing initialization, and binary-level tests that prove the server remains composition-only.
 
 ## Lab Source Files
 

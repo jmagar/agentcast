@@ -1,20 +1,9 @@
-//! JSON Schema normalization and validation for AgentCast.
-//!
-//! Schema owns MCP tool input-schema normalization, CLI argument coercion
-//! rules, validation helpers, and future form metadata generation.
+mod error;
+mod field;
+mod normalize;
+mod validate;
 
-/// Returns the crate's public boundary label for diagnostics.
-#[must_use]
-pub fn crate_boundary() -> &'static str {
-    "agent-schema"
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn exposes_boundary_label() {
-        assert_eq!(crate_boundary(), "agent-schema");
-    }
-}
+pub use error::{SchemaError, SchemaResult};
+pub use field::{NormalizedField, NormalizedSchema, SchemaKind};
+pub use normalize::normalize_schema;
+pub use validate::validate_payload;

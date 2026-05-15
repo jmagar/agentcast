@@ -131,3 +131,50 @@ fn route_authorization_allows_matching_subject() {
 
     assert!(decision.is_authorized());
 }
+
+#[test]
+fn route_collection_supports_crud_status_and_test_resolution() {
+    let mut collection =
+        ProtectedRouteCollection::new(vec![route("syslog", "mcp.example.test", "/syslog")])
+            .expect("collection");
+
+    assert_eq!(collection.list().len(), 1);
+    assert_eq!(
+        collection.get("syslog").expect("route").public_path,
+        "/syslog"
+    );
+
+    collection
+        .upsert(route("git", "mcp.example.test", "/git"))
+        .expect("upsert");
+    assert_eq!(collection.list().len(), 2);
+
+    let status = collection.status("git").expect("status");
+    assert!(status.enabled);
+    assert!(status.resolves_public_route);
+    assert!(status.resolves_metadata_route);
+
+    let resolved = collection
+        .test("mcp.example.test", "/git/tools/list")
+        .expect("test")
+        .expect("resolved");
+    assert_eq!(resolved.name, "git");
+
+    let removed = collection.remove("syslog").expect("remove");
+    assert_eq!(removed.name, "syslog");
+    assert!(collection.get("syslog").is_none());
+}
+
+#[test]
+fn route_collection_rejects_duplicate_enabled_update() {
+    let mut collection =
+        ProtectedRouteCollection::new(vec![route("one", "mcp.example.test", "/one")])
+            .expect("collection");
+
+    let err = collection
+        .upsert(route("two", "mcp.example.test", "/one"))
+        .expect_err("duplicate");
+
+    assert!(matches!(err, GatewayError::DuplicateProtectedRoute { .. }));
+    assert!(collection.get("two").is_none());
+}

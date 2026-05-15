@@ -20,12 +20,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0184-modelcontextprotocol-io-specification-2025-11-25-basic-authorization.md"
   - "docs/references/mcp/docs/markdown/0185-modelcontextprotocol-io-docs-learn-architecture.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-gateway Extraction Implementation Plan
@@ -45,6 +45,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 Gateway is required for the MCP launcher MVP after config and MCP lifecycle are in place.
 
 `docs/plans/extract-crates/gateway-first.md` supersedes the older narrow gateway scope for v0. Catalog merge/routing should still land first, but v0 gateway completion also requires protected public MCP route policy and upstream OAuth lifecycle orchestration over `agent-auth`, `agent-store`, `agent-runtime`, and `agent-api`.
+
+## Current Implementation Audit
+
+As of 2026-05-15, `agent-gateway` is partially implemented: it projects runtime catalogs into gateway actions, applies exposure allow/deny policy before listing/search/routing, routes calls/reads/prompts, exports search documents, owns protected route config/index/validation/CRUD/status/test policy, and orchestrates upstream OAuth state, metadata discovery, dynamic client registration, authorization-code and refresh-token endpoint exchange, refresh state transitions, refresh-failed status, removed-upstream OAuth reconciliation, and runtime credential injection with the auth/store/runtime/API layers.
+
+Continue with catalog diff/reload behavior and broader health aggregation. Do not collapse these responsibilities back into a Lab-style singleton manager.
 
 ## Lab Source Files
 

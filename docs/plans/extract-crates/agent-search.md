@@ -15,12 +15,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0175-modelcontextprotocol-io-specification-2025-11-25-server-prompts.md"
   - "docs/references/mcp/docs/markdown/0185-modelcontextprotocol-io-docs-learn-architecture.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-search Extraction Implementation Plan
@@ -38,6 +38,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 `agent-search` can support the v0 launcher if action discovery needs ranking beyond a simple list. Keep the first implementation deterministic and explainable.
+
+## Current Implementation Audit
+
+As of 2026-05-15, `agent-search` is partially implemented for the gateway path with deterministic action documents, indexing, query matching, and ranked results used by the gateway API.
+
+Continue with redaction and truncation rules, schema summary handling, bounded result sets, and explanation metadata that remains stable for CLI/API/UI consumers.
 
 ## Lab Evidence Read
 

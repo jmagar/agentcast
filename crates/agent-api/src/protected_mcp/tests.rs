@@ -1,10 +1,10 @@
 use super::*;
-use agent_auth::ScopeSet;
+use agent_auth::{BearerClaims, ScopeSet, StaticBearerTokenVerifier};
 use agent_gateway::{ProtectedRouteConfig, ProtectedRouteTarget};
 use agent_protocol::{McpServerConfig, McpServerId, McpTransportConfig};
 use agent_runtime::McpRuntime;
 use serde_json::json;
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 fn api() -> ProtectedMcpRouteApi {
     let routes = ProtectedRouteIndex::from_routes(vec![ProtectedRouteConfig {
@@ -22,6 +22,51 @@ fn api() -> ProtectedMcpRouteApi {
     .expect("route index");
 
     ProtectedMcpRouteApi::new(routes)
+}
+
+fn route_index() -> ProtectedRouteIndex {
+    ProtectedRouteIndex::from_routes(vec![ProtectedRouteConfig {
+        name: "syslog".to_string(),
+        enabled: true,
+        public_host: "mcp.example.test".to_string(),
+        public_path: "/syslog".to_string(),
+        resource_uri: "https://mcp.example.test/syslog".to_string(),
+        authorization_servers: vec!["https://auth.example.test".to_string()],
+        required_scopes: ScopeSet::parse("mcp:read").expect("scope"),
+        target: ProtectedRouteTarget::UpstreamMcp {
+            server_id: McpServerId::new("syslog"),
+        },
+    }])
+    .expect("route index")
+}
+
+#[test]
+fn static_bearer_verifier_authorizes_opaque_tokens() {
+    let verifier = StaticBearerTokenVerifier::new([(
+        "opaque-token",
+        BearerClaims {
+            subject: "user-1".to_string(),
+            audience: "https://mcp.example.test/syslog".to_string(),
+            scopes: ScopeSet::parse("mcp:read").expect("scope"),
+        },
+    )]);
+    let api = ProtectedMcpRouteApi::new_with_verifier(route_index(), Arc::new(verifier));
+
+    let response = api.handle(ProtectedMcpRequest {
+        host: "mcp.example.test".to_string(),
+        path: "/syslog".to_string(),
+        public_origin: "https://mcp.example.test".to_string(),
+        authorization: Some("Bearer opaque-token".to_string()),
+    });
+
+    let ProtectedMcpResponse::DispatchAllowed {
+        status, subject, ..
+    } = response
+    else {
+        panic!("expected dispatch");
+    };
+    assert_eq!(status, ResponseStatus::Accepted);
+    assert_eq!(subject, "user-1");
 }
 
 #[test]

@@ -6,7 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
-description = "AgentCast registry aggregation for MCP Registry, ACP Registry, and local curated metadata."
+description = "AgentCast MCP Registry client, cache, and metadata normalization."
 
 [dependencies]
 agent-core = { path = "../agent-core" }

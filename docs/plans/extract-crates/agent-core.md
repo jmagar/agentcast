@@ -15,12 +15,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0107-modelcontextprotocol-io-specification-2025-11-25-server-tools.md"
   - "docs/references/mcp/docs/markdown/0111-modelcontextprotocol-io-specification-2025-11-25-schema.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-core Extraction Implementation Plan
@@ -37,7 +37,11 @@ review_basis: "cross-referenced against local docs/references snapshot"
 
 ## MVP Position
 
-Core should be implemented before higher crates so all extracted behavior uses one error and metadata vocabulary.
+Core should remain small and should not be implemented speculatively. The gateway-first implementation proved that most v0 shared models belong in `agent-protocol` or crate-local error types until multiple crates need the same primitive.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-core` implements the shared primitive layer called for by this plan: action metadata/category/risk DTOs, protocol-neutral error kinds, stable ID helpers, timestamp helpers, and small JSON helpers. Keep the crate dependency-light and add new primitives only after at least two crate surfaces need the same type.
 
 ## Lab Source Files
 

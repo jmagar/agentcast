@@ -21,12 +21,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0147-modelcontextprotocol-io-registry-quickstart.md"
   - "docs/references/mcp/docs/markdown/0175-modelcontextprotocol-io-specification-2025-11-25-server-prompts.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-protocol Extraction Implementation Plan
@@ -44,6 +44,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 Protocol models are required before MCP catalog, gateway, CLI, and API work can converge.
+
+## Current Implementation Audit
+
+As of 2026-05-15, `agent-protocol` is partially implemented for the gateway path: it owns shared action identifiers, launcher action models, invocation result shapes, and MCP-facing catalog DTOs used across MCP, runtime, gateway, API, and CLI crates.
+
+Continue by adding registry, marketplace, schema, or ACP DTOs only when another active plan needs a shared serialized contract. Do not pre-load this crate with speculative models.
 
 ## Lab Source Files
 

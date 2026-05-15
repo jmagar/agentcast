@@ -13,12 +13,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0019-modelcontextprotocol-io-specification-2025-11-25-basic-lifecycle.md"
   - "docs/references/mcp/docs/markdown/0088-modelcontextprotocol-io-specification-2025-11-25-basic-transports.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-fleet Extraction Implementation Plan
@@ -36,6 +36,10 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 `agent-fleet` is post-v0 unless explicitly promoted in `docs/MVP.md`. The MCP launcher MVP is local-first and should not depend on fleet behavior.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-fleet` implements the post-v0 contract layer called for by this plan: generic node identity, labels, heartbeat/status DTOs, capability summaries, execution targets, and remote execution request DTOs. Remote node enrollment, queueing, API/CLI routes, host management, and Lab fleet policy remain outside the local gateway.
 
 ## Lab Evidence Read
 

@@ -15,12 +15,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0019-modelcontextprotocol-io-specification-2025-11-25-basic-lifecycle.md"
   - "docs/references/mcp/docs/markdown/0107-modelcontextprotocol-io-specification-2025-11-25-server-tools.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-observability Extraction Implementation Plan
@@ -38,6 +38,10 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 `agent-observability` can support v0 when it keeps logging and audit behavior small. It must not block MCP launcher work with dashboards, metrics exporters, or long-term telemetry storage.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-observability` implements the lightweight helper layer called for by this plan: tracing initialization, secret/env-like redaction helpers, structured activity event DTOs, and reusable health summary DTOs. Dashboards, log stores, fleet log streaming, and long-term telemetry remain out of scope.
 
 ## Lab Evidence Read
 

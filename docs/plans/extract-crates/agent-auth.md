@@ -14,12 +14,12 @@ upstream_refs:
   - "docs/references/jmagar/jmagar-lab.xml"
   - "docs/references/mcp/docs/markdown/0184-modelcontextprotocol-io-specification-2025-11-25-basic-authorization.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-auth Extraction Implementation Plan
@@ -39,6 +39,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 For v0, auth can stay minimal because the MCP launcher is local-first. HTTP API auth should be thin and explicit once the API is exposed beyond loopback.
 
 The gateway-first v0 scope promotes generic MCP protected-resource metadata and upstream OAuth primitives into v0. This does not promote Lab's Google OAuth product flow, browser session UX, admin policy, or homelab service auth; it only means `agent-auth` must provide generic protected-resource metadata, bearer/scope helpers, PKCE/state/callback validation, token domain types, and credential encryption primitives or an auth-facing repository trait for `agent-store`.
+
+## Current Implementation Audit
+
+As of 2026-05-15, `agent-auth` is partially implemented with bearer token parsing, fixture, static, and HS256 JWT/JWKS bearer-token verifier boundaries, scope checks, protected-resource metadata helpers, OAuth metadata/status/domain types, refresh DTOs, and safe URL validation primitives used by gateway protected routes and OAuth API handlers.
+
+Continue with token exchange primitives, stricter callback/state validation, asymmetric JWKS algorithms when a deployment surface requires them, any auth-facing store traits needed by future flows, and redaction guarantees for credentials and errors.
 
 ## Lab Source Files
 

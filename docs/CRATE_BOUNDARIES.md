@@ -11,12 +11,12 @@ upstream_refs: []
 related:
   - "docs/contracts/crates-and-dependencies.md"
   - "docs/MVP.md"
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against local docs/references snapshot and gateway OAuth token exchange implementation"
 ---
 
 # Crate Boundaries
@@ -299,7 +299,7 @@ Owns gateway-specific business rules:
 - name collision resolution.
 - allowlists/denylists.
 - protected public MCP route config, validation, indexing, and route-to-upstream/backend policy.
-- upstream OAuth lifecycle orchestration for gateway-managed MCP upstreams.
+- upstream OAuth lifecycle orchestration, including token endpoint exchange, for gateway-managed MCP upstreams.
 - gateway health state.
 
 Must call protocol/runtime/auth/store crates rather than duplicating process/session/auth persistence behavior.

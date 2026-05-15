@@ -1,21 +1,9 @@
-//! Observability primitives for AgentCast.
-//!
-//! This crate is intentionally small until implementation begins. It will own
-//! tracing setup, audit-event shapes, log redaction, and metrics-facing helpers
-//! that need to be shared across CLI, API, runtime, and gateway surfaces.
+mod activity;
+mod health;
+mod redaction;
+mod tracing_setup;
 
-/// Returns the crate's public boundary label for diagnostics.
-#[must_use]
-pub fn crate_boundary() -> &'static str {
-    "agent-observability"
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn exposes_boundary_label() {
-        assert_eq!(crate_boundary(), "agent-observability");
-    }
-}
+pub use activity::{ActivityEvent, ActivityKind};
+pub use health::{HealthStatus, HealthSummary};
+pub use redaction::{redact_key_value, redact_value, should_redact_key};
+pub use tracing_setup::init_tracing;

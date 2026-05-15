@@ -3,6 +3,7 @@ use agent_gateway::{GatewayCatalog, GatewayService, ProtectedRouteTarget, Resolv
 use agent_protocol::{LauncherActionId, McpServerConfig, McpServerId, ToolInvocation};
 use agent_runtime::McpRuntime;
 use agent_search::{SearchIndex, SearchQuery, SearchResult};
+use serde::Serialize;
 use serde_json::Value;
 
 #[cfg(test)]
@@ -56,6 +57,58 @@ impl GatewayCliView {
             upstream_id: upstream_id.to_string(),
             status: format!("{status:?}").to_ascii_lowercase(),
         }
+    }
+
+    pub fn render_actions_table(rows: &[GatewayActionRow]) -> String {
+        render_table(
+            &["ACTION ID", "NAME", "DESCRIPTION"],
+            rows.iter().map(|row| {
+                [
+                    row.id.clone(),
+                    row.name.clone(),
+                    row.description.clone().unwrap_or_default(),
+                ]
+            }),
+        )
+    }
+
+    pub fn render_search_table(rows: &[GatewaySearchRow]) -> String {
+        render_table(
+            &["ACTION ID", "NAME", "SCORE", "MATCH", "TRUNCATED"],
+            rows.iter().map(|row| {
+                [
+                    row.action_id.clone(),
+                    row.name.clone(),
+                    row.score.to_string(),
+                    row.match_kind.clone(),
+                    row.truncated.to_string(),
+                ]
+            }),
+        )
+    }
+
+    pub fn render_oauth_status(row: &OAuthStatusRow) -> String {
+        render_table(
+            &["SUBJECT", "UPSTREAM", "STATUS"],
+            [[
+                row.subject.clone(),
+                row.upstream_id.clone(),
+                row.status.clone(),
+            ]],
+        )
+    }
+
+    pub fn render_protected_route(row: &ProtectedRouteRow) -> String {
+        render_table(
+            &["NAME", "RESOURCE", "METADATA", "SCOPES", "TARGET"],
+            [[
+                row.name.clone(),
+                row.resource_uri.clone(),
+                row.metadata_path.clone(),
+                row.required_scopes.join(" "),
+                row.target.clone(),
+            ]],
+        )
     }
 }
 
@@ -122,14 +175,14 @@ impl GatewayCliHandlers {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct GatewayActionRow {
     pub id: String,
     pub name: String,
     pub description: Option<String>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct GatewaySearchRow {
     pub action_id: String,
     pub name: String,
@@ -138,7 +191,7 @@ pub struct GatewaySearchRow {
     pub truncated: bool,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct ProtectedRouteRow {
     pub name: String,
     pub resource_uri: String,
@@ -147,9 +200,53 @@ pub struct ProtectedRouteRow {
     pub target: String,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct OAuthStatusRow {
     pub subject: String,
     pub upstream_id: String,
     pub status: String,
+}
+
+fn render_table<const N: usize>(
+    headers: &[&str; N],
+    rows: impl IntoIterator<Item = [String; N]>,
+) -> String {
+    let rows = rows.into_iter().collect::<Vec<_>>();
+    let mut widths = headers.map(str::len);
+    for row in &rows {
+        for (index, cell) in row.iter().enumerate() {
+            widths[index] = widths[index].max(cell.len());
+        }
+    }
+
+    let mut output = String::new();
+    render_row(&mut output, &headers.map(str::to_string), &widths);
+    render_separator(&mut output, &widths);
+    for row in rows {
+        render_row(&mut output, &row, &widths);
+    }
+    output.trim_end().to_string()
+}
+
+fn render_row<const N: usize>(output: &mut String, cells: &[String; N], widths: &[usize; N]) {
+    for (index, cell) in cells.iter().enumerate() {
+        if index > 0 {
+            output.push_str("  ");
+        }
+        output.push_str(cell);
+        for _ in cell.len()..widths[index] {
+            output.push(' ');
+        }
+    }
+    output.push('\n');
+}
+
+fn render_separator<const N: usize>(output: &mut String, widths: &[usize; N]) {
+    for (index, width) in widths.iter().enumerate() {
+        if index > 0 {
+            output.push_str("  ");
+        }
+        output.push_str(&"-".repeat(*width));
+    }
+    output.push('\n');
 }

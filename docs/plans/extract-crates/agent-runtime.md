@@ -15,12 +15,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0019-modelcontextprotocol-io-specification-2025-11-25-basic-lifecycle.md"
   - "docs/references/mcp/docs/markdown/0088-modelcontextprotocol-io-specification-2025-11-25-basic-transports.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-runtime Extraction Implementation Plan
@@ -38,6 +38,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 Runtime is required for local stdio MCP server lifecycle in the MVP. ACP session registry and provider runtime are post-v0.
+
+## Current Implementation Audit
+
+As of 2026-05-15, `agent-runtime` is partially implemented for the gateway path: it starts configured stdio and streamable HTTP upstreams, maintains runtime catalog snapshots that preserve MCP tool input/output schemas and annotations, routes tool calls, resource reads, and prompt gets through the MCP adapter, applies configurable operation timeouts, caps catalog and response size, opens per-upstream circuits after configurable repeated operation failures, supports explicit reprobe and runtime shutdown, persists generic process-state records for stale-record detection/cleanup, and can inject subject-scoped bearer credentials into Streamable HTTP MCP calls without forwarding inbound client bearer tokens.
+
+Continue with direct child/process-group termination only when the MCP SDK exposes stable process handles, cancellation propagation to spawned upstreams where supported, and fuller lifecycle integration. ACP runtime/session work remains post-v0.
 
 ## Lab Source Files
 

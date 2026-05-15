@@ -14,12 +14,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0088-modelcontextprotocol-io-specification-2025-11-25-basic-transports.md"
   - "docs/references/mcp/docs/markdown/0184-modelcontextprotocol-io-specification-2025-11-25-basic-authorization.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-config Extraction Implementation Plan
@@ -37,6 +37,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 ## MVP Position
 
 Config is the first extraction priority for the MCP launcher MVP.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-config` is implemented for the gateway and marketplace foundation paths: it parses MCP JSON/JSONC with line and block comment stripping, models native AgentCast MCP upstream TOML, validates stdio and streamable HTTP upstream definitions, preserves secret safety by tracking imported env key names instead of values, discovers Claude Code, Claude Desktop, Codex, Gemini, Cursor, VS Code, VS Code Insiders, Antigravity, Windsurf, and OpenCode configs with stable dedupe, counts imported env keys after JSONC stripping, mutates upstream entries through explicit add/replace/remove helpers, and provides restricted `.env` merge behavior for token/secret/key/url/runtime env references.
+
+Continue with richer import/adoption CLI workflows and any additional apply surfaces required by marketplace/server plans.
 
 ## Lab Source Files
 

@@ -66,12 +66,12 @@ related:
   - "docs/plans/extract-crates/agent-stash.md"
   - "docs/plans/extract-crates/agent-store.md"
   - "docs/plans/extract-crates/agent-ui-contracts.md"
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # Lab Extraction Bootstrap Implementation Plan
@@ -134,18 +134,16 @@ Do not extract into AgentCast core:
 
 ## MVP Extraction Priority
 
-For the MCP launcher MVP, extract or recreate in this order:
+The gateway-first pass has already landed a working MCP launcher/gateway path: config discovery, stdio and streamable HTTP upstream clients, catalog/list/search/call behavior, protected public MCP JSON-RPC routes, OAuth probe/begin/callback/status/refresh/clear/register fixtures, API routes, CLI handler surfaces, protected-route/OAuth CLI commands, and a runnable `agentcast` HTTP server.
 
-1. config patterns for MCP upstreams.
-2. MCP stdio/server lifecycle handling.
-3. tool discovery and normalized catalog generation.
-4. gateway catalog merge and collision behavior.
-5. deterministic tool invocation path.
-6. CLI/API thin-surface patterns.
-7. registry search/cache/normalization for MCP servers.
-8. install-plan preview/apply patterns.
+Continue extraction in this order:
 
-ACP, loadouts, stash, fleet, desktop UI, and remote execution remain post-v0 unless explicitly promoted in `docs/MVP.md`.
+1. execute `agent-registry.md` for registry metadata sync once the gateway's local runtime path remains stable.
+2. execute `agent-marketplace.md` for install preview/apply after registry models and store support exist.
+3. extend `agent-schema.md` and `agent-core.md` only where a concrete registry, marketplace, config, or API slice needs additional shared validation or cross-crate primitives.
+4. extend `agent-observability.md`, `agent-server.md`, and `agent-ui-contracts.md` incrementally as real API/server/UI surfaces require them.
+
+ACP runtime behavior, loadouts, stash workflows, fleet workflows, desktop UI, and remote execution remain post-v0 unless explicitly promoted in `docs/MVP.md`; their contract crates now exist so future work has a clean home.
 
 ## Crate Plans
 
@@ -169,6 +167,34 @@ ACP, loadouts, stash, fleet, desktop UI, and remote execution remain post-v0 unl
 - [agent-stash.md](./agent-stash.md)
 - [agent-fleet.md](./agent-fleet.md)
 - [agent-ui-contracts.md](./agent-ui-contracts.md)
+
+## Current Audit
+
+Use this table before executing any individual plan. For partially implemented plans, first verify the listed current state in code, then skip completed historical tasks and continue at the remaining gaps.
+
+| Plan | Current state on `gateway-first-skeleton` | Continue with |
+|---|---|---|
+| `gateway-first.md` | Operational through the local gateway path, including broad MCP config discovery, durable OAuth storage, metadata discovery, dynamic client registration, authorization-code and refresh-token endpoint exchange, refresh locking/state transitions, reload reconciliation, protected-route credential lookup, runtime credential injection, protected MCP Streamable HTTP session/SSE behavior, AgentCast MCP stdio tools for servers/actions/resources/prompts/search/call/read/get/status, core `agentcast gateway` subcommands, protected-route/OAuth CLI commands, runtime operation timeouts, runtime response/catalog caps, circuit breaker/reprobe behavior, persisted process-state stale-record helpers, runtime shutdown hook, and graceful server shutdown. | Process-group termination remains future runtime hardening unless the MCP SDK exposes stable child process handles. |
+| `agent-protocol.md` | Partially complete for gateway action IDs, action models, and MCP-facing DTOs. | Add schema, registry, marketplace, or ACP DTOs only when the owning plan needs a shared contract. |
+| `agent-config.md` | Partially complete with MCP JSON/JSONC parsing including line/block JSONC comments, native AgentCast MCP TOML load/validation, discovery for Claude Code, Claude Desktop, Codex, Gemini, Cursor, VS Code, VS Code Insiders, Antigravity, Windsurf, and OpenCode, explicit upstream mutation helpers, and restricted token/secret/key/url/runtime `.env` merge behavior. | Richer import/adoption CLI workflows. |
+| `agent-mcp.md` | Partially complete with RMCP stdio and streamable HTTP clients, gateway-facing MCP server tools for servers/actions/resources/prompts/search/call/read/get/status, and tools/resources/prompts/result models. | HTTP fixture tests, response bounds, and transport-specific error mapping. |
+| `agent-runtime.md` | Partially complete with upstream startup, catalog snapshots that preserve tool input/output schemas and annotations, call/read/get-prompt routing, streamable HTTP upstreams, subject-scoped bearer injection for HTTP MCP calls, configurable operation timeouts, catalog/response caps, circuit breaker/reprobe behavior, persisted process-state stale-record detection/cleanup helpers, and runtime shutdown. | Process-group termination and direct child reaping remain future hardening until the MCP SDK exposes stable process handles. |
+| `agent-gateway.md` | Partially complete with catalog/routing/search documents, exposure allow/deny policy, protected route config/index/CRUD/status/test policy, OAuth orchestration, metadata discovery, dynamic client registration, authorization-code/refresh-token endpoint exchange, refresh lock integration through the API surface, and removed-upstream OAuth reconciliation. | Catalog diff/reload behavior and broader health aggregation. |
+| `agent-search.md` | Partially complete with deterministic action indexing and search. | Redaction/truncation, schema summaries, result bounds, and explanation metadata. |
+| `agent-auth.md` | Partially complete with bearer/scope helpers, fixture, static, and HS256 JWT/JWKS bearer verifier boundaries, protected-resource metadata, OAuth primitives, and refresh DTOs. | Add asymmetric JWKS algorithms only when a deployment surface requires them. |
+| `agent-store.md` | Partially complete with in-memory and SQLite OAuth stores, pending-state persistence, encrypted credential persistence, dynamic OAuth client registration persistence, generic SQLite open/migration harness, owner-only DB permissions, and catalog snapshot persistence. | Install-plan/audit records only when CLI/API surfaces require durable history. |
+| `agent-api.md` | Partially complete with gateway action/search/call/server/resource/prompt/status routes, protected MCP, OAuth HTTP routes, protected-route admin CRUD/status/test routes, protected-route credential lookup, protected MCP transport/session validation, authenticated SSE setup, registry search routes that can be backed by cache, marketplace MCP plan/apply routes with env validation, and typed JSON error envelopes. | OpenAPI generation remains surface polish. |
+| `agent-cli.md` | Partially complete with gateway handler/view helpers plus binary-level `agentcast gateway` actions/search/call/read-resource/get-prompt/protected-route/oauth, protected-route JSON file list/add/remove/status/test, `registry search`, `marketplace plan-mcp/apply-mcp` subcommands with optional `.env` merge, and human table output for gateway action/search views. | Config import/adoption command polish and broader human output coverage. |
+| `agent-server.md` | Partially complete with binary composition, gateway HTTP serving, MCP stdio mode, registry/marketplace command dispatch, and graceful shutdown. Current composition is accepted in `main.rs`; split into `lib.rs`/`startup.rs` only when reuse requires it. | Config path strategy, logging flags, and production serve ergonomics. |
+| `agent-core.md` | Implemented with action metadata/category/risk DTOs, protocol-neutral error kinds, stable ID helpers, timestamp helpers, and small JSON helpers. | Add only primitives needed by multiple crates. |
+| `agent-schema.md` | Implemented with JSON Schema normalization and payload validation for action/tool schemas. | Extend only for OpenAPI/UI form needs or broader schema coverage. |
+| `agent-registry.md` | Partially complete with MCP Registry DTO normalization, status/freshness/provenance metadata, paginated HTTP list client, in-memory fetched-at cache, and deterministic local search. | Durable cache/audit persistence only if marketplace or store execution needs it. |
+| `agent-marketplace.md` | Partially complete with install plan vocabulary, stdio and remote HTTP MCP package-to-upstream preview planning, object-level apply through `agent-config`, file-level CLI apply, required/default env resolution, restricted `.env` merge, runtime/env/argv/URL safety checks, and clean v0 MCP-only scope. | MCPB integrity verification and non-MCP package installation remain future work. |
+| `agent-observability.md` | Implemented with tracing setup, redaction helpers, activity events, and health DTOs. | Add audit/metrics/log storage only when a real surface requires it. |
+| `agent-ui-contracts.md` | Implemented with gateway, registry, marketplace, and invocation view DTOs. | Extend only for stable external/UI contracts. |
+| `agent-acp.md` | Implemented with post-v0 adapter contract DTOs for errors, events, permissions, and session commands. | ACP runtime launch, provider supervision, persistence, registry, marketplace, and chat UI remain future work. |
+| `agent-stash.md` | Implemented with safe relative paths, item metadata, drift status, revisions, and import/export manifests. | Saved-artifact workflows, persistence wiring, API/CLI/UI surfaces remain future work. |
+| `agent-fleet.md` | Implemented with generic node identity, heartbeat/status, capabilities, execution targets, and remote execution request DTOs. | Enrollment, queues, remote execution runtime, API/CLI routes, and Lab fleet policy remain future work. |
 
 ## Verification Expectations
 

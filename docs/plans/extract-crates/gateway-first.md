@@ -31,12 +31,12 @@ related:
   - "docs/plans/extract-crates/agent-runtime.md"
   - "docs/plans/extract-crates/agent-search.md"
   - "docs/plans/extract-crates/agent-store.md"
-last_reviewed: "2026-05-14"
-last_modified: "2026-05-14"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "1290747"
-review_basis: "live ../lab gateway, MCP, and upstream source review"
+modified_at_commit: "d327495"
+review_basis: "live ../lab gateway, MCP, upstream source review, and gateway-first implementation audit"
 ---
 
 # Gateway-First Extraction Plan
@@ -52,6 +52,12 @@ config discovery -> MCP upstream runtime -> normalized catalog -> gateway policy
 This updates the earlier gateway-first framing: AgentCast still leaves behind Lab virtual servers and homelab service wiring, but the rest of the generic gateway feature set is in v0 scope.
 
 The first mergeable gateway skeleton is smaller than the v0 completion bar: config discovery, stdio runtime, normalized catalog/list/call, and a CLI path over the shared services. Protected routes and OAuth are v0 requirements, but they should land as later tested slices over that skeleton instead of blocking the first usable runtime.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, the first usable gateway is no longer only a skeleton. The implemented path includes MCP config discovery for Claude Code, Claude Desktop, Codex, Gemini, Cursor, VS Code, VS Code Insiders, Antigravity, Windsurf, and OpenCode; MCP JSON/JSONC import parsing with line and block comments; RMCP stdio upstreams; streamable HTTP upstream clients; runtime catalog snapshots; tool/resource/prompt listing; gateway exposure allow/deny filtering; action search and invocation; protected public MCP route indexing/auth/metadata/basic JSON-RPC dispatch; protected route CRUD/status/test surfaces; fixture/static bearer token verification boundaries; fixture-backed OAuth probe/begin/callback/status/refresh/clear/register; gateway API routes for actions, servers, resources, prompts, and status; CLI gateway handlers/views and real `agentcast gateway` list/search/call/read-resource/get-prompt/protected-route/oauth subcommands; AgentCast MCP stdio tools for listing servers/actions/resources/prompts, action search/call, resource read, prompt get, and gateway status; and an `agentcast` HTTP server that composes these routes.
+
+When executing this plan now, first verify the corresponding code path and skip historical steps that are already landed. The post-dispatch audit gaps identified on 2026-05-15 have been folded back into this implementation slice; remaining work should come from downstream crate plans, production hardening called out below, or newly discovered defects rather than from this historical skeleton sequence.
 
 ## Reviewed Lab Sources
 
@@ -522,12 +528,16 @@ Acceptance tests:
 
 ### Phase 5c: Public HTTP MCP route mounting
 
+Status: implemented for v0 protected Streamable HTTP behavior. Basic protected route matching, bearer/scope auth, protected-resource metadata, JSON-RPC dispatch, subject-scoped upstream OAuth credential lookup, `initialize` handling, Origin validation, `Accept` handling, protocol-version validation, `MCP-Session-Id` issuance/tracking/deletion, unknown-session rejection, `202` notification handling, authenticated GET `text/event-stream` setup, and `Last-Event-ID` based event replay numbering work through `agent-api`.
+
 Mount protected route behavior in `agent-api` over in-memory gateway/auth fixtures:
 
 - route matching and auth decisions delegate to `agent-gateway` and `agent-auth`.
 - streamable HTTP obligations are handled at the API/MCP transport layer: Origin validation, `Accept` handling for `application/json` and `text/event-stream`, `MCP-Protocol-Version` after initialize, optional `MCP-Session-Id`, `202` for notifications/responses where appropriate, and `400`/`404`/`405` for invalid session or method.
 
 ### Phase 5d: OAuth probe/status fixtures
+
+Status: implemented for fixture metadata, safe probe validation, authorization begin, callback completion, and status through `agent-api`; live provider token exchange remains out of this completed slice.
 
 Implement fixture-backed upstream OAuth probe and status without durable credentials:
 
@@ -543,6 +553,8 @@ Acceptance tests:
 
 ### Phase 5e: Credential persistence and callback completion
 
+Status: partially implemented. Callback completion now works against either the in-memory OAuth store or the SQLite OAuth store with AES-GCM encrypted access/refresh tokens and one-time pending-state consumption. Dynamic client registration persistence remains.
+
 Implement durable OAuth state and credential persistence:
 
 - `agent-store` owns SQLite migrations, restrictive file permissions, credential rows, pending auth state, and dynamic client registration rows if used.
@@ -557,6 +569,8 @@ Acceptance tests:
 - clear deletes credentials, pending auth state, and dynamic registrations for the upstream/subject scope.
 
 ### Phase 5f: Refresh, clear, and runtime credential injection
+
+Status: implemented for the v0 generic lifecycle. Begin, callback, status, refresh, clear, refresh-failed state transitions, subject-scoped credential lookup for protected MCP routes, runtime credential injection primitives, metadata discovery, dynamic client registration with persisted client credentials, authorization-code token exchange, refresh-token exchange against an OAuth token endpoint, API-level per-subject/upstream refresh locking, and reload reconciliation for removed upstream OAuth state exist over the shared gateway/store/runtime/API path.
 
 Complete the OAuth lifecycle before declaring the gateway complete:
 
@@ -574,6 +588,8 @@ Acceptance tests:
 - status/errors/logs are redacted.
 
 ### Phase 6: Thin surfaces
+
+Status: partially implemented. API routes, server composition, gateway CLI handler/view helpers, full Clap subcommands, and AgentCast MCP server tools exist for the v0 gateway surfaces.
 
 After the shared path works, expose it through surfaces:
 

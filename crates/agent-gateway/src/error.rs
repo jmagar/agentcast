@@ -10,6 +10,8 @@ pub enum GatewayError {
     InvalidPublicPath(String),
     #[error("duplicate protected route for host `{host}` and path segment `{path}`")]
     DuplicateProtectedRoute { host: String, path: String },
+    #[error("protected route `{0}` was not found")]
+    ProtectedRouteNotFound(String),
     #[error("gateway runtime error: {0}")]
     Runtime(String),
 }

@@ -17,6 +17,8 @@ fn action_rows_are_shaped_from_gateway_catalog() {
             title: Some("Git status".to_string()),
             description: Some("Inspect working tree".to_string()),
             input_schema: json!({}),
+            output_schema: None,
+            annotations: None,
         }],
         resources: Vec::new(),
         resource_templates: Vec::new(),
@@ -60,6 +62,40 @@ fn oauth_status_row_is_redacted_status_only() {
     assert_eq!(row.subject, "user-1");
     assert_eq!(row.upstream_id, "github");
     assert_eq!(row.status, "connected");
+}
+
+#[test]
+fn renders_human_action_and_search_tables() {
+    let actions = vec![GatewayActionRow {
+        id: "mcp:fixture:echo".to_string(),
+        name: "Echo".to_string(),
+        description: Some("Repeat text".to_string()),
+    }];
+    let search = vec![GatewaySearchRow {
+        action_id: "mcp:fixture:echo".to_string(),
+        name: "Echo".to_string(),
+        score: 100,
+        match_kind: "Name".to_string(),
+        truncated: false,
+    }];
+
+    let action_table = GatewayCliView::render_actions_table(&actions);
+    let search_table = GatewayCliView::render_search_table(&search);
+
+    assert!(action_table.contains("ACTION ID"));
+    assert!(action_table.contains("mcp:fixture:echo"));
+    assert!(search_table.contains("SCORE"));
+    assert!(search_table.contains("100"));
+}
+
+#[test]
+fn renders_human_status_rows_without_secret_fields() {
+    let status = GatewayCliView::oauth_status("user-1", "github", OAuthStatus::Connected);
+    let output = GatewayCliView::render_oauth_status(&status);
+
+    assert!(output.contains("SUBJECT"));
+    assert!(output.contains("connected"));
+    assert!(!output.contains("token"));
 }
 
 fn fixture_config() -> McpServerConfig {

@@ -15,12 +15,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0107-modelcontextprotocol-io-specification-2025-11-25-server-tools.md"
   - "docs/references/mcp/docs/markdown/0111-modelcontextprotocol-io-specification-2025-11-25-schema.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-schema Extraction Implementation Plan
@@ -37,7 +37,11 @@ review_basis: "cross-referenced against local docs/references snapshot"
 
 ## MVP Position
 
-`agent-schema` supports the MCP launcher MVP by defining how MCP tool input schemas become validated invocation inputs and future schema-driven UX metadata.
+`agent-schema` supports the MCP launcher MVP only when shared schema validation or normalization is needed across more than one surface.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-schema` implements the shared JSON Schema normalization and validation slice called for by this plan. It normalizes object, string, number, integer, boolean, array, enum, required/default, and nested object metadata and validates invocation payloads without owning CLI parsers, UI controls, or MCP transport behavior.
 
 ## Lab Evidence Read
 

@@ -19,12 +19,12 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0175-modelcontextprotocol-io-specification-2025-11-25-server-prompts.md"
   - "docs/references/mcp/docs/markdown/0185-modelcontextprotocol-io-docs-learn-architecture.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-api Extraction Implementation Plan
@@ -44,6 +44,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 `agent-api` is useful after the CLI proves the MCP launcher runtime path. The API should expose the same semantics as the CLI; it must not become the first owner of MCP launcher behavior.
 
 Under the gateway-first v0 scope, `agent-api` eventually mounts protected public MCP routes, OAuth protected-resource metadata, upstream OAuth callbacks, and lifecycle HTTP handlers. These routes are surface glue only: route matching, auth policy, OAuth lifecycle, runtime invocation, and credential persistence remain in `agent-gateway`, `agent-auth`, `agent-runtime`, and `agent-store`.
+
+## Current Implementation Audit
+
+As of 2026-05-15 on `gateway-first-skeleton`, `agent-api` is partially implemented with gateway action/search/call/server/resource/prompt/status routes, protected MCP metadata/auth/basic JSON-RPC dispatch, protected-route admin CRUD/status/test routes, protected-route lookup of subject-scoped upstream OAuth credentials, protected MCP transport/session validation, authenticated GET `text/event-stream` setup with `Last-Event-ID` event numbering, upstream OAuth probe/authorize/register/callback/refresh/status/clear handlers, metadata discovery, dynamic client registration, authorization-code/refresh-token exchange through the gateway-owned OAuth HTTP client, per-subject/upstream refresh locking, registry search routes that can be backed by the registry cache, marketplace MCP plan/apply routes over `agent-marketplace` and `agent-config` with env-value validation, and typed JSON error envelopes with stable error codes.
+
+Continue with OpenAPI generation once endpoint shapes settle. Tests should keep proving HTTP handlers remain thin wrappers over gateway/auth/runtime/store/registry/marketplace services.
 
 ## Lab Source Files
 

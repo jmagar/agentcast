@@ -73,6 +73,31 @@ fn discovery_supports_command_arrays_and_scrubs_raw_env_values() {
 }
 
 #[test]
+fn discovery_counts_env_keys_after_jsonc_comment_stripping() {
+    let home = temp_home("jsonc-env-count");
+    write(
+        &home,
+        ".gemini/mcp.json",
+        r#"{
+          /* comment before server map */
+          "mcpServers": {
+            "fixture": {
+              "command": "node",
+              "env": {
+                "TOKEN": "secret" // trailing comment
+              }
+            }
+          }
+        }"#,
+    );
+
+    let discovered = discover_known_mcp_configs(&home);
+
+    assert_eq!(discovered[0].env_key_count, 1);
+    assert_eq!(discovered[0].config.env_keys, vec!["TOKEN"]);
+}
+
+#[test]
 fn codex_toml_mcp_servers_are_discovered() {
     let home = temp_home("codex");
     write(
@@ -89,6 +114,70 @@ args = ["server.js"]
     assert_eq!(discovered.len(), 1);
     assert_eq!(discovered[0].source_client, "codex");
     assert_eq!(discovered[0].config.name, "fixture");
+}
+
+#[test]
+fn discovery_scans_additional_json_mcp_clients() {
+    let home = temp_home("additional-clients");
+    write(
+        &home,
+        ".config/Claude/claude_desktop_config.json",
+        r#"{"mcpServers":{"desktop":{"command":"desktop-mcp"}}}"#,
+    );
+    write(
+        &home,
+        ".cursor/mcp.json",
+        r#"{"mcpServers":{"cursor":{"command":"cursor-mcp"}}}"#,
+    );
+    write(
+        &home,
+        ".config/Code/User/mcp.json",
+        r#"{"mcpServers":{"vscode":{"command":"vscode-mcp"}}}"#,
+    );
+    write(
+        &home,
+        ".windsurf/mcp.json",
+        r#"{"mcpServers":{"windsurf":{"command":"windsurf-mcp"}}}"#,
+    );
+    write(
+        &home,
+        ".opencode/mcp.json",
+        r#"{"mcpServers":{"opencode":{"command":"opencode-mcp"}}}"#,
+    );
+
+    let discovered = discover_known_mcp_configs(&home);
+    let sources = discovered
+        .iter()
+        .map(|server| server.source_client.as_str())
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        sources,
+        vec!["claude-desktop", "cursor", "vscode", "windsurf", "opencode",]
+    );
+}
+
+#[test]
+fn discovery_scans_vscode_insiders_and_antigravity() {
+    let home = temp_home("vscode-variants");
+    write(
+        &home,
+        ".config/Code - Insiders/User/mcp.json",
+        r#"{"mcpServers":{"insiders":{"command":"insiders-mcp"}}}"#,
+    );
+    write(
+        &home,
+        ".config/Antigravity/User/mcp.json",
+        r#"{"mcpServers":{"antigravity":{"command":"antigravity-mcp"}}}"#,
+    );
+
+    let discovered = discover_known_mcp_configs(&home);
+    let names = discovered
+        .iter()
+        .map(|server| server.config.name.as_str())
+        .collect::<Vec<_>>();
+
+    assert_eq!(names, vec!["insiders", "antigravity"]);
 }
 
 fn temp_home(name: &str) -> PathBuf {

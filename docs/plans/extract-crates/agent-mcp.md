@@ -25,12 +25,12 @@ upstream_refs:
   - "docs/references/mcporter/docs/mcp.md"
   - "docs/references/mcporter/docs/tool-calling.md"
 related: []
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-15"
+last_modified: "2026-05-15"
+modified_on_branch: "gateway-first-skeleton"
 modified_at_version: "0.1.0"
-modified_at_commit: "b941533"
-review_basis: "cross-referenced against local docs/references snapshot"
+modified_at_commit: "d327495"
+review_basis: "cross-referenced against gateway-first implementation audit and local docs/references snapshot"
 ---
 
 # agent-mcp Extraction Implementation Plan
@@ -50,6 +50,12 @@ review_basis: "cross-referenced against local docs/references snapshot"
 MCP is the protocol core of the launcher MVP.
 
 `docs/plans/extract-crates/gateway-first.md` promotes generic upstream OAuth lifecycle into v0, but `agent-mcp` remains only the MCP adapter owner. It may expose RMCP authorization/client hooks and transport helpers; OAuth policy, credentials, lifecycle orchestration, and persistence stay in `agent-auth`, `agent-gateway`, `agent-runtime`, and `agent-store`.
+
+## Current Implementation Audit
+
+As of 2026-05-15, `agent-mcp` is partially implemented: the crate exports RMCP-backed stdio client behavior, a streamable HTTP client path, AgentCast MCP stdio server tools for gateway servers/actions/resources/prompts/search/call/read/get/status through a backend trait, metadata models, result conversion, error normalization, and test fixture support for tools/resources/prompts. Historical task text that discusses replacing a stdio stub is no longer current; do not reintroduce the stub shape when executing this plan.
+
+Continue this plan by verifying the existing RMCP paths, then hardening streamable HTTP fixture coverage, response bounds, and transport-specific error mapping.
 
 ## Lab Source Files
 
@@ -346,21 +352,19 @@ impl StdioClient {
     }
 
     pub async fn list_tools(&self) -> McpResult<Vec<crate::metadata::McpToolMetadata>> {
-        Err(McpError::Protocol(format!(
-            "stdio RMCP integration for `{}` is not implemented yet",
-            self.upstream_id
-        )))
+        // Historical scaffold only. The current implementation delegates to RMCP.
+        let _ = &self.upstream_id;
+        Ok(Vec::new())
     }
 
     pub async fn call_tool(&self, name: &str, _args: Value) -> McpResult<McpToolResult> {
-        Err(McpError::Protocol(format!(
-            "stdio tool `{name}` call is not implemented yet"
-        )))
+        // Historical scaffold only. The current implementation delegates to RMCP.
+        Err(McpError::Protocol(format!("stdio tool `{name}` requires RMCP wiring")))
     }
 }
 ```
 
-Expected: this step creates the public seam; the next execution pass replaces the stub internals with RMCP calls before tests pass.
+Expected: this historical step is already complete in the current implementation. Treat the snippet as original boundary scaffolding only; do not copy it over the RMCP-backed `stdio` module.
 
 ### Task 2: Add Protocol Metadata Conversion
 
@@ -548,9 +552,9 @@ Run:
 rg -n "rmcp|ServiceExt|serve_client|TokioChildProcess|list_tools|call_tool" Cargo.toml crates ../lab/crates/lab/src/mcp ../lab/crates/lab/examples
 ```
 
-Expected: the concrete RMCP symbols for connecting stdio, initializing, listing tools, and calling tools are known before replacing the stub.
+Expected: the concrete RMCP symbols for connecting stdio, initializing, listing tools, and calling tools still match the current implementation.
 
-- [ ] **Step 2: Replace stdio stubs with RMCP calls.**
+- [ ] **Step 2: Verify stdio RMCP calls.**
 
 Expected implementation shape in `crates/agent-mcp/src/stdio.rs`:
 

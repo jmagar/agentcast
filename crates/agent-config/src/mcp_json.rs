@@ -158,7 +158,7 @@ fn array_strings(value: Option<&Value>) -> Vec<String> {
         .unwrap_or_default()
 }
 
-fn strip_jsonc_comments(raw: &str) -> String {
+pub(crate) fn strip_jsonc_comments(raw: &str) -> String {
     let mut output = String::with_capacity(raw.len());
     let mut chars = raw.chars().peekable();
     let mut in_string = false;
@@ -190,6 +190,21 @@ fn strip_jsonc_comments(raw: &str) -> String {
                     output.push('\n');
                     break;
                 }
+            }
+            continue;
+        }
+
+        if ch == '/' && chars.peek() == Some(&'*') {
+            chars.next();
+            let mut previous = '\0';
+            for next in chars.by_ref() {
+                if next == '\n' {
+                    output.push('\n');
+                }
+                if previous == '*' && next == '/' {
+                    break;
+                }
+                previous = next;
             }
             continue;
         }

@@ -1,4 +1,5 @@
 use super::*;
+use agent_auth::{OAuthCredential, ScopeSet};
 use agent_protocol::{
     LauncherActionId, McpServerConfig, McpServerId, McpToolId, McpTransportConfig,
 };
@@ -62,4 +63,61 @@ async fn unknown_action_returns_structured_gateway_error() {
         .expect_err("unknown action");
 
     assert_eq!(error, GatewayError::UnknownAction("missing".to_string()));
+}
+
+#[tokio::test]
+async fn gateway_can_invoke_with_subject_scoped_upstream_credential() {
+    let runtime = McpRuntime::start(vec![fixture_config()]).await;
+    let gateway = GatewayService::from_runtime_snapshots(runtime.snapshots());
+    let action_id =
+        LauncherActionId::from_server_tool(&McpServerId::new("fixture"), &McpToolId::new("echo"));
+
+    let result = gateway
+        .invoke_with_credential(
+            &runtime,
+            ToolInvocation {
+                action_id,
+                arguments: json!({"message": "credential-path"}),
+            },
+            Some(&OAuthCredential {
+                subject: "user-1".to_string(),
+                upstream_id: "fixture".to_string(),
+                access_token: "upstream-token-not-inbound-token".to_string(),
+                refresh_token: None,
+                scopes: ScopeSet::parse("mcp:read").expect("scope"),
+                expires_at_unix: 2000,
+                refresh_failed: false,
+            }),
+        )
+        .await
+        .expect("invoke");
+
+    assert_eq!(result.output["content"][0]["text"], "credential-path");
+}
+
+#[tokio::test]
+async fn exposure_policy_blocks_direct_invocation_of_hidden_action() {
+    let runtime = McpRuntime::start(vec![fixture_config()]).await;
+    let gateway = GatewayService::from_runtime_snapshots_with_policy(
+        runtime.snapshots(),
+        &GatewayExposurePolicy::default().deny_tool(McpToolId::new("echo")),
+    );
+    let action_id =
+        LauncherActionId::from_server_tool(&McpServerId::new("fixture"), &McpToolId::new("echo"));
+
+    let error = gateway
+        .invoke(
+            &runtime,
+            ToolInvocation {
+                action_id,
+                arguments: json!({"message": "hidden"}),
+            },
+        )
+        .await
+        .expect_err("hidden action must not route");
+
+    assert_eq!(
+        error,
+        GatewayError::UnknownAction("mcp:fixture:echo".to_string())
+    );
 }

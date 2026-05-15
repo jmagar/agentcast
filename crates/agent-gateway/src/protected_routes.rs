@@ -1,12 +1,13 @@
 use crate::GatewayError;
 use agent_auth::{AuthDecision, BearerClaims, ScopeSet};
 use agent_protocol::McpServerId;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 #[cfg(test)]
 mod tests;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ProtectedRouteConfig {
     pub name: String,
     pub enabled: bool,
@@ -18,7 +19,98 @@ pub struct ProtectedRouteConfig {
     pub target: ProtectedRouteTarget,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ProtectedRouteCollection {
+    #[serde(default)]
+    pub routes: Vec<ProtectedRouteConfig>,
+}
+
+impl ProtectedRouteCollection {
+    pub fn new(routes: Vec<ProtectedRouteConfig>) -> Result<Self, GatewayError> {
+        let collection = Self { routes };
+        collection.validate()?;
+        Ok(collection)
+    }
+
+    pub fn validate(&self) -> Result<(), GatewayError> {
+        ProtectedRouteIndex::from_routes(self.routes.clone()).map(|_| ())
+    }
+
+    pub fn index(&self) -> Result<ProtectedRouteIndex, GatewayError> {
+        ProtectedRouteIndex::from_routes(self.routes.clone())
+    }
+
+    pub fn list(&self) -> &[ProtectedRouteConfig] {
+        &self.routes
+    }
+
+    pub fn get(&self, name: &str) -> Option<&ProtectedRouteConfig> {
+        self.routes.iter().find(|route| route.name == name)
+    }
+
+    pub fn upsert(&mut self, route: ProtectedRouteConfig) -> Result<(), GatewayError> {
+        let mut next = self.routes.clone();
+        match next.iter().position(|existing| existing.name == route.name) {
+            Some(index) => next[index] = route,
+            None => next.push(route),
+        }
+        let next = Self::new(next)?;
+        self.routes = next.routes;
+        Ok(())
+    }
+
+    pub fn remove(&mut self, name: &str) -> Result<ProtectedRouteConfig, GatewayError> {
+        let index = self
+            .routes
+            .iter()
+            .position(|route| route.name == name)
+            .ok_or_else(|| GatewayError::ProtectedRouteNotFound(name.to_string()))?;
+        Ok(self.routes.remove(index))
+    }
+
+    pub fn status(&self, name: &str) -> Result<ProtectedRouteStatus, GatewayError> {
+        let route = self
+            .get(name)
+            .ok_or_else(|| GatewayError::ProtectedRouteNotFound(name.to_string()))?;
+        let index = self.index()?;
+        Ok(ProtectedRouteStatus {
+            name: route.name.clone(),
+            enabled: route.enabled,
+            resolves_public_route: route.enabled
+                && index
+                    .resolve(&route.public_host, &route.public_path)
+                    .is_some_and(|resolved| resolved.name == route.name),
+            resolves_metadata_route: route.enabled
+                && index
+                    .resolve_metadata(
+                        &route.public_host,
+                        &format!(
+                            "/.well-known/oauth-protected-resource{}",
+                            first_path_segment(&route.public_path)?
+                        ),
+                    )
+                    .is_some_and(|resolved| resolved.name == route.name),
+        })
+    }
+
+    pub fn test(
+        &self,
+        host: &str,
+        path: &str,
+    ) -> Result<Option<ResolvedProtectedRoute>, GatewayError> {
+        Ok(self.index()?.resolve(host, path).cloned())
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ProtectedRouteStatus {
+    pub name: String,
+    pub enabled: bool,
+    pub resolves_public_route: bool,
+    pub resolves_metadata_route: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ProtectedRouteTarget {
     UpstreamMcp { server_id: McpServerId },
 }

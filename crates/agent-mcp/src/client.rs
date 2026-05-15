@@ -99,17 +99,12 @@ impl McpClient {
     }
 
     pub async fn list_resource_templates(&self) -> McpResult<Vec<McpResourceTemplateMetadata>> {
-        let result = self
-            .service
+        self.service
             .peer()
-            .list_resource_templates(None)
+            .list_all_resource_templates()
             .await
-            .map_err(|error| McpError::Protocol(error.to_string()))?;
-        Ok(result
-            .resource_templates
-            .into_iter()
-            .map(Into::into)
-            .collect())
+            .map_err(|error| McpError::Protocol(error.to_string()))
+            .map(|templates| templates.into_iter().map(Into::into).collect())
     }
 
     pub async fn read_resource(&self, uri: &str) -> McpResult<McpReadResourceResult> {

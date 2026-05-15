@@ -37,6 +37,7 @@ fn provider_requires_pkce_s256_and_selects_scope_by_priority() {
         issuer: "https://auth.example.test".to_string(),
         authorization_endpoint: "https://auth.example.test/authorize".to_string(),
         token_endpoint: "https://auth.example.test/token".to_string(),
+        registration_endpoint: None,
         code_challenge_methods_supported: vec!["plain".to_string(), "S256".to_string()],
         scopes_supported: scopes("fallback"),
     };
