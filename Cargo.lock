@@ -81,6 +81,7 @@ dependencies = [
 name = "agent-cli"
 version = "0.1.0"
 dependencies = [
+ "agent-auth",
  "agent-config",
  "agent-core",
  "agent-gateway",
@@ -88,6 +89,7 @@ dependencies = [
  "agent-protocol",
  "agent-registry",
  "agent-runtime",
+ "agent-search",
  "anyhow",
  "clap",
  "jiff",

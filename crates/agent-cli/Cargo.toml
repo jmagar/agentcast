@@ -16,6 +16,8 @@ agent-registry = { path = "../agent-registry" }
 agent-marketplace = { path = "../agent-marketplace" }
 agent-runtime = { path = "../agent-runtime" }
 agent-gateway = { path = "../agent-gateway" }
+agent-auth = { path = "../agent-auth" }
+agent-search = { path = "../agent-search" }
 
 clap.workspace = true
 tokio.workspace = true
