@@ -10,6 +10,7 @@ description = "AgentCast gateway for exposing, filtering, routing, and bridging 
 
 [dependencies]
 agent-core = { path = "../agent-core" }
+agent-auth = { path = "../agent-auth" }
 agent-protocol = { path = "../agent-protocol" }
 agent-runtime = { path = "../agent-runtime" }
 
