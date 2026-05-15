@@ -49,21 +49,22 @@ impl McpRuntime {
             return;
         }
 
-        let McpTransportConfig::Stdio { command, args, env } = config.transport else {
-            self.upstreams.insert(
-                server_id.clone(),
-                RuntimeUpstream {
-                    name: server_name.clone(),
-                    client: None,
-                    snapshot: empty_snapshot(server_id, server_name, ServerStatus::Failed),
-                    failure: Some("only stdio upstreams are implemented in runtime v0".to_string()),
-                },
-            );
-            return;
+        let client = match config.transport {
+            McpTransportConfig::Stdio { command, args, env } => {
+                let connection = StdioConnection::new(command, args).with_env(env);
+                McpClient::connect_stdio(connection, McpClientOptions::default()).await
+            }
+            McpTransportConfig::StreamableHttp {
+                url,
+                bearer_token_env,
+            } => {
+                let bearer_token = bearer_token_env.and_then(|key| std::env::var(key).ok());
+                McpClient::connect_streamable_http(url, bearer_token, McpClientOptions::default())
+                    .await
+            }
         };
 
-        let connection = StdioConnection::new(command, args).with_env(env);
-        match McpClient::connect_stdio(connection, McpClientOptions::default()).await {
+        match client {
             Ok(client) => match discover_snapshot(&server_id, &server_name, &client).await {
                 Ok(snapshot) => {
                     self.upstreams.insert(

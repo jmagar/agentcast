@@ -4,7 +4,10 @@ use crate::{
 };
 use rmcp::model::{CallToolRequestParams, GetPromptRequestParams, ReadResourceRequestParams};
 use rmcp::service::RunningService;
-use rmcp::transport::TokioChildProcess;
+use rmcp::transport::{
+    StreamableHttpClientTransport, TokioChildProcess,
+    streamable_http_client::StreamableHttpClientTransportConfig,
+};
 use rmcp::{RoleClient, ServiceExt};
 use serde_json::{Map, Value};
 use tokio_util::sync::CancellationToken;
@@ -36,6 +39,24 @@ impl McpClient {
             .spawn()
             .map_err(|error| McpError::Connection(error.to_string()))?
             .0;
+        let service = ()
+            .serve_with_ct(transport, options.cancellation_token)
+            .await
+            .map_err(|error| McpError::Connection(error.to_string()))?;
+
+        Ok(Self { service })
+    }
+
+    pub async fn connect_streamable_http(
+        url: impl Into<String>,
+        bearer_token: Option<String>,
+        options: McpClientOptions,
+    ) -> McpResult<Self> {
+        let mut config = StreamableHttpClientTransportConfig::with_uri(url.into());
+        if let Some(token) = bearer_token {
+            config = config.auth_header(token);
+        }
+        let transport = StreamableHttpClientTransport::from_config(config);
         let service = ()
             .serve_with_ct(transport, options.cancellation_token)
             .await
