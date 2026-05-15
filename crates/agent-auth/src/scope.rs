@@ -6,6 +6,7 @@ use thiserror::Error;
 mod tests;
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[serde(transparent)]
 pub struct ScopeSet {
     scopes: Vec<String>,
 }
