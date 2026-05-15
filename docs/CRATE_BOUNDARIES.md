@@ -260,6 +260,7 @@ Owns local persistence:
 - store traits and implementations.
 - local cache directories.
 - persisted runtime/catalog/install state.
+- persisted credential/token state when required by auth/gateway features.
 - transaction helpers.
 
 Must not own:
@@ -267,6 +268,7 @@ Must not own:
 - runtime process lifecycle.
 - protocol adapter behavior.
 - gateway routing policy.
+- OAuth authorization policy beyond persistence primitives.
 - surface DTO shaping.
 
 ## `agent-search`
@@ -296,20 +298,24 @@ Owns gateway-specific business rules:
 - ACP-backed capability exposure.
 - name collision resolution.
 - allowlists/denylists.
+- protected public MCP route config, validation, indexing, and route-to-upstream/backend policy.
+- upstream OAuth lifecycle orchestration for gateway-managed MCP upstreams.
 - gateway health state.
 
-Must call protocol/runtime crates rather than duplicating process/session behavior.
+Must call protocol/runtime/auth/store crates rather than duplicating process/session/auth persistence behavior.
 
 ## `agent-auth`
 
 Owns:
 
 - bearer/session auth primitives.
-- optional OAuth/server auth helpers.
+- OAuth metadata and authorization-flow primitives.
+- OAuth protected-resource metadata DTOs and helpers.
+- token/credential domain types and validation helpers.
 - auth context extraction.
 - auth errors.
 
-Must not own product authorization policy beyond generic primitives unless documented.
+Must not own gateway routing, upstream process lifecycle, or product authorization policy beyond generic primitives unless documented.
 
 ## `agent-api`
 
@@ -320,6 +326,7 @@ Owns:
 - request extraction.
 - response mapping.
 - OpenAPI wiring.
+- protected-resource metadata and OAuth callback HTTP route mounting.
 - server state wrapper.
 
 Must not own business logic. Handlers call runtime, gateway, registry, marketplace, or auth.

@@ -38,6 +38,8 @@ review_basis: "cross-referenced against local docs/references snapshot"
 
 For v0, auth can stay minimal because the MCP launcher is local-first. HTTP API auth should be thin and explicit once the API is exposed beyond loopback.
 
+The gateway-first v0 scope promotes generic MCP protected-resource metadata and upstream OAuth primitives into v0. This does not promote Lab's Google OAuth product flow, browser session UX, admin policy, or homelab service auth; it only means `agent-auth` must provide generic protected-resource metadata, bearer/scope helpers, PKCE/state/callback validation, token domain types, and credential encryption primitives or an auth-facing repository trait for `agent-store`.
+
 ## Lab Source Files
 
 - `../lab/crates/lab-auth/src/auth_context.rs`
@@ -73,12 +75,17 @@ Extract:
 
 - `AuthContext` shape and principal propagation.
 - bearer token middleware patterns.
+- protected-resource metadata DTOs and `WWW-Authenticate` helpers for gateway-served MCP routes.
+- scope parsing and insufficient-scope error helpers.
+- PKCE/state/callback validation primitives for upstream OAuth flows.
+- token/credential domain types and redaction helpers.
 - session ID generation and hashing patterns when an HTTP session store is introduced.
 - authorization helper patterns that return typed errors.
 
 Leave behind:
 
 - Lab Google OAuth flow.
+- Lab OAuth env var names and hard-coded upstream exceptions.
 - Lab admin/service policy.
 - browser session routes unless AgentCast ships a browser UI.
 - node/fleet enrollment auth.

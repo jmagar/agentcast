@@ -43,6 +43,8 @@ review_basis: "cross-referenced against local docs/references snapshot"
 
 `agent-api` is useful after the CLI proves the MCP launcher runtime path. The API should expose the same semantics as the CLI; it must not become the first owner of MCP launcher behavior.
 
+Under the gateway-first v0 scope, `agent-api` eventually mounts protected public MCP routes, OAuth protected-resource metadata, upstream OAuth callbacks, and lifecycle HTTP handlers. These routes are surface glue only: route matching, auth policy, OAuth lifecycle, runtime invocation, and credential persistence remain in `agent-gateway`, `agent-auth`, `agent-runtime`, and `agent-store`.
+
 ## Lab Source Files
 
 - `../lab/crates/lab/src/api.rs`

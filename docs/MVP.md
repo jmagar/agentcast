@@ -63,7 +63,9 @@ Do not port Lab-specific homelab service behavior into the MVP.
 - Normalized `LauncherAction` catalog.
 - Search/list output suitable for a command palette later.
 - Structured invocation results.
-- Basic gateway catalog merging and collision handling.
+- Complete generic gateway behavior for v0: catalog merging, collision handling, exposure policy, routing, search handoff, protected public MCP routes, and upstream OAuth lifecycle.
+- Protected public MCP route management and OAuth protected-resource metadata for gateway-served MCP routes.
+- Upstream OAuth probe, authorization, callback completion, status, refresh, and credential clearing for OAuth-backed MCP upstreams.
 - MCP Registry aggregator support: fetch, paginate, cache, index, normalize, track upstream status, and expose official-MCP-registry-compatible metadata locally where practical.
 - Official MCP Registry install-plan generation from the local aggregator cache/index.
 - Thin API/MCP surfaces only after the shared runtime path exists.
@@ -86,8 +88,8 @@ Do not port Lab-specific homelab service behavior into the MVP.
 2. `agent-config`: load AgentCast config, import MCP JSON config, discover existing client configs, dedupe servers.
 3. `agent-mcp`: connect, list tools/resources/prompts, call tools, read resources, normalize MCP errors.
 4. `agent-runtime`: start configured servers, discover tools/resources/prompts, cache catalog, invoke actions.
-5. `agent-gateway`: merge catalogs, resolve collisions, apply aliases, route action to server/tool.
-6. `agent-cli`: list servers/resources/tools/prompts, read resources, invoke an action, render JSON/human output.
+5. `agent-gateway` + `agent-auth`: merge catalogs, resolve collisions, apply aliases, route action to server/tool, manage protected public MCP routes, and orchestrate upstream OAuth lifecycle over auth/store primitives.
+6. `agent-cli`: list servers/resources/tools/prompts, read resources, invoke an action, manage protected routes, run upstream OAuth probe/authorize/status/clear flows, render JSON/human output.
 7. `agent-registry`: act as a local MCP Registry aggregator/subregistry: fetch official registry pages, cache/index normalized records, track freshness/status, and expose OpenAPI-compatible metadata where practical.
 8. `agent-marketplace`: produce previewable MCP server install plans from registry/local metadata.
 9. `agent-api` and MCP gateway endpoint: expose the same runtime behavior without adding product logic.
@@ -123,12 +125,14 @@ v0 is complete when a user can:
 8. run `agentcast actions list` or `ac actions list` and see normalized launcher actions.
 9. run `agentcast call <action-id> [args]` or `ac call <action-id> [args]` and invoke a discovered MCP tool deterministically through the normalized action path.
 10. perform the same server/tool/resource/prompt/action operations through AgentCast MCP tools and API endpoints.
-11. add a server from raw MCP JSON config and have it work.
-12. sync/cache official MCP Registry entries through AgentCast's local aggregator/index.
-13. search registry entries from the local cache/index with provenance and freshness metadata.
-14. preview an install/config plan for an MCP server.
-15. see structured success or highly informative error output.
-16. run tests that cover discovery, dedupe, resource listing/reading, tool listing, prompt listing, collision handling, invocation, registry aggregation/cache/index behavior, and install-plan generation without network by default.
+11. configure and validate protected public MCP routes with OAuth protected-resource metadata.
+12. run upstream OAuth probe/authorize/status/refresh/clear flows for OAuth-backed MCP upstreams without hardcoding provider secrets.
+13. add a server from raw MCP JSON config and have it work.
+14. sync/cache official MCP Registry entries through AgentCast's local aggregator/index.
+15. search registry entries from the local cache/index with provenance and freshness metadata.
+16. preview an install/config plan for an MCP server.
+17. see structured success or highly informative error output.
+18. run tests that cover discovery, dedupe, resource listing/reading, tool listing, prompt listing, collision handling, invocation, protected route matching/metadata, upstream OAuth lifecycle fixtures, registry aggregation/cache/index behavior, and install-plan generation without network by default.
 
 Setup performance criteria:
 

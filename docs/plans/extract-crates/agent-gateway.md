@@ -44,6 +44,8 @@ review_basis: "cross-referenced against local docs/references snapshot"
 
 Gateway is required for the MCP launcher MVP after config and MCP lifecycle are in place.
 
+`docs/plans/extract-crates/gateway-first.md` supersedes the older narrow gateway scope for v0. Catalog merge/routing should still land first, but v0 gateway completion also requires protected public MCP route policy and upstream OAuth lifecycle orchestration over `agent-auth`, `agent-store`, `agent-runtime`, and `agent-api`.
+
 ## Lab Source Files
 
 - `../lab/crates/lab/src/dispatch/gateway/catalog.rs`
@@ -85,11 +87,13 @@ Extract:
 - exposure filtering.
 - deterministic invocation routing.
 - gateway health aggregation.
+- protected public MCP route config, validation, indexing, and route-to-upstream policy.
+- upstream OAuth lifecycle orchestration for gateway-managed MCP upstreams.
 
 Leave behind:
 
 - Lab service catalog assumptions.
-- OAuth lifecycle until MCP OAuth is explicitly in scope.
+- Lab-specific OAuth policy, env var names, hard-coded upstream exceptions, and service credential mutation.
 - ACP-to-gateway bridge until ACP post-v0 work starts.
 
 ## File Structure

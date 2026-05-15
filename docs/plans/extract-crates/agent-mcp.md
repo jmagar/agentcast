@@ -49,6 +49,8 @@ review_basis: "cross-referenced against local docs/references snapshot"
 
 MCP is the protocol core of the launcher MVP.
 
+`docs/plans/extract-crates/gateway-first.md` promotes generic upstream OAuth lifecycle into v0, but `agent-mcp` remains only the MCP adapter owner. It may expose RMCP authorization/client hooks and transport helpers; OAuth policy, credentials, lifecycle orchestration, and persistence stay in `agent-auth`, `agent-gateway`, `agent-runtime`, and `agent-store`.
+
 ## Lab Source Files
 
 - `../lab/crates/lab/src/mcp.rs`
@@ -90,7 +92,7 @@ Leave behind:
 
 - Lab gateway catalog merge logic.
 - Lab service-specific virtual servers.
-- OAuth lifecycle until MCP OAuth is explicitly promoted.
+- OAuth lifecycle policy, credential persistence, and user-facing OAuth commands.
 
 ## File Structure
 
