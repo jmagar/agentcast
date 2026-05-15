@@ -33,6 +33,7 @@ AgentCast development should optimize for simple local operation, small modules,
 Expected local tools:
 
 ```bash
+rustup --version
 cargo nextest --version
 lefthook version
 gitleaks version
@@ -40,7 +41,14 @@ taplo --version
 just --version
 ```
 
-Use the Cargo-native setup task to verify the local toolchain and install or sync Git hooks:
+Expected Rustup setup:
+
+```bash
+rustup toolchain install nightly
+rustup component add rustc-codegen-cranelift --toolchain nightly
+```
+
+Use the Cargo-native setup task to install or sync nightly/Cranelift support, verify the local toolchain, and install or sync Git hooks:
 
 ```bash
 cargo xtask setup
@@ -67,6 +75,8 @@ cargo xtask setup
 cargo xtask doctor
 cargo xtask check
 cargo xtask nextest
+cargo xtask nextest-ci
+cargo xtask file-size
 cargo xtask ci
 cargo xtask verify
 ```
@@ -78,6 +88,8 @@ just setup
 just doctor
 just check
 just test
+just test-ci
+just file-size
 just ci
 just verify
 ```

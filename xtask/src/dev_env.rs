@@ -6,6 +6,7 @@ use crate::{Error, Result};
 const REQUIRED_TOOLS: &[ToolCheck] = &[
     ToolCheck::new("cargo", &["--version"]),
     ToolCheck::new("rustc", &["--version"]),
+    ToolCheck::new("rustup", &["--version"]),
     ToolCheck::new("cargo", &["nextest", "--version"]),
     ToolCheck::new("lefthook", &["version"]),
     ToolCheck::new("gitleaks", &["version"]),
@@ -13,12 +14,28 @@ const REQUIRED_TOOLS: &[ToolCheck] = &[
     ToolCheck::new("just", &["--version"]),
 ];
 
-const OPTIONAL_TOOLS: &[ToolCheck] = &[ToolCheck::new("cargo", &["+nightly", "--version"])];
+const REQUIRED_TOOLCHAINS: &[ToolCheck] = &[
+    ToolCheck::new("rustup", &["run", "nightly", "cargo", "--version"]),
+    ToolCheck::new("rustup", &["run", "nightly", "rustc", "--version"]),
+];
+
+const REQUIRED_COMPONENTS: &[RustupComponent] = &[RustupComponent::new("rustc-codegen-cranelift")];
 
 #[derive(Clone, Copy)]
 struct ToolCheck {
     program: &'static str,
     args: &'static [&'static str],
+}
+
+#[derive(Clone, Copy)]
+struct RustupComponent {
+    name: &'static str,
+}
+
+impl RustupComponent {
+    const fn new(name: &'static str) -> Self {
+        Self { name }
+    }
 }
 
 impl ToolCheck {
@@ -48,14 +65,23 @@ fn check_dev_environment(install_hooks: bool) -> Result<()> {
 
     let mut issues = Vec::new();
 
+    if install_hooks {
+        install_rust_tooling()?;
+    }
+
     println!("Required tools:");
     for tool in REQUIRED_TOOLS {
         check_tool(*tool, true, &mut issues);
     }
 
-    println!("\nOptional tools:");
-    for tool in OPTIONAL_TOOLS {
-        check_tool(*tool, false, &mut issues);
+    println!("\nRequired Rust toolchains:");
+    for tool in REQUIRED_TOOLCHAINS {
+        check_tool(*tool, true, &mut issues);
+    }
+
+    println!("\nRequired Rustup components:");
+    for component in REQUIRED_COMPONENTS {
+        check_rustup_component(*component, &mut issues);
     }
 
     if install_hooks {
@@ -126,6 +152,76 @@ fn first_output_line(bytes: &[u8]) -> Option<String> {
         .map(str::trim)
         .find(|line| !line.is_empty())
         .map(ToOwned::to_owned)
+}
+
+fn install_rust_tooling() -> Result<()> {
+    println!("Rust toolchain setup:");
+    run_setup_command("rustup", &["toolchain", "install", "nightly"])?;
+    run_setup_command(
+        "rustup",
+        &[
+            "component",
+            "add",
+            "rustc-codegen-cranelift",
+            "--toolchain",
+            "nightly",
+        ],
+    )?;
+    Ok(())
+}
+
+fn run_setup_command(program: &str, args: &[&str]) -> Result<()> {
+    let status = Command::new(program)
+        .args(args)
+        .status()
+        .map_err(Error::Io)?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(Error::Failed {
+            program: format!("{program} {}", args.join(" ")),
+            code: status.code(),
+        })
+    }
+}
+
+fn check_rustup_component(component: RustupComponent, issues: &mut Vec<String>) {
+    let output = Command::new("rustup")
+        .args(["component", "list", "--toolchain", "nightly"])
+        .output();
+
+    match output {
+        Ok(output) if output.status.success() => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let installed = stdout
+                .lines()
+                .any(|line| line.starts_with(component.name) && line.contains("(installed)"));
+            if installed {
+                println!("  ok   {}", component.name);
+            } else {
+                issues.push(format!(
+                    "required nightly rustup component `{}` is not installed; run `cargo xtask setup`",
+                    component.name
+                ));
+                println!("  fail {} (missing)", component.name);
+            }
+        }
+        Ok(output) => {
+            let status = output.status.code().map_or_else(
+                || "terminated by signal".to_owned(),
+                |code| format!("exited with status {code}"),
+            );
+            issues.push(format!(
+                "could not list nightly rustup components: {status}"
+            ));
+            println!("  fail {} ({status})", component.name);
+        }
+        Err(error) => {
+            issues.push(format!("could not list nightly rustup components: {error}"));
+            println!("  fail {} ({error})", component.name);
+        }
+    }
 }
 
 fn install_lefthook() -> Result<()> {

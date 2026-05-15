@@ -27,6 +27,9 @@ clippy:
 test:
     cargo xtask nextest
 
+test-ci:
+    cargo xtask nextest-ci
+
 test-compat:
     cargo xtask test
 
@@ -38,6 +41,9 @@ verify:
 
 audit-docs:
     cargo xtask audit-docs
+
+file-size:
+    cargo xtask file-size
 
 secrets:
     cargo xtask secrets

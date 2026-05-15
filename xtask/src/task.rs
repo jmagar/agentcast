@@ -7,7 +7,7 @@ use crate::dev_env;
 use crate::{Error, Result};
 
 const CHECK: &[&str] = &["check", "--workspace"];
-const CHECK_NIGHTLY: &[&str] = &["+nightly", "check", "--workspace"];
+
 const CLIPPY: &[&str] = &[
     "clippy",
     "--workspace",
@@ -20,6 +20,7 @@ const FMT: &[&str] = &["fmt", "--all"];
 const FMT_CHECK: &[&str] = &["fmt", "--all", "--", "--check"];
 const TEST: &[&str] = &["test", "--workspace"];
 const NEXTEST: &[&str] = &["nextest", "run", "--workspace"];
+const NEXTEST_CI: &[&str] = &["nextest", "run", "--workspace", "--profile", "ci"];
 const INSTALL_HOOKS: &[&str] = &["install"];
 const PRE_COMMIT: &[&str] = &["run", "pre-commit"];
 const PRE_PUSH: &[&str] = &["run", "pre-push"];
@@ -39,12 +40,8 @@ const TASKS: &[Task] = &[
     Task::new("check", "cargo check --workspace", TaskKind::Cargo(CHECK)),
     Task::new(
         "check-cranelift",
-        "RUSTFLAGS=-Zcodegen-backend=cranelift cargo +nightly check --workspace",
-        TaskKind::CargoWithEnv {
-            args: CHECK_NIGHTLY,
-            key: "RUSTFLAGS",
-            value: "-Zcodegen-backend=cranelift",
-        },
+        "scripts/check-cranelift.sh",
+        TaskKind::Script("scripts/check-cranelift.sh"),
     ),
     Task::new(
         "clippy",
@@ -64,9 +61,14 @@ const TASKS: &[Task] = &[
         TaskKind::Cargo(NEXTEST),
     ),
     Task::new(
+        "nextest-ci",
+        "cargo nextest run --workspace --profile ci",
+        TaskKind::Cargo(NEXTEST_CI),
+    ),
+    Task::new(
         "ci",
-        "fmt-check, check, clippy, nextest",
-        TaskKind::Sequence(&["fmt-check", "check", "clippy", "nextest"]),
+        "fmt-check, check, clippy, nextest-ci",
+        TaskKind::Sequence(&["fmt-check", "check", "clippy", "nextest-ci"]),
     ),
     Task::new(
         "verify",
@@ -109,6 +111,11 @@ const TASKS: &[Task] = &[
         TaskKind::Script("scripts/check-dependency-updates.sh"),
     ),
     Task::new(
+        "file-size",
+        "scripts/check-file-size.sh",
+        TaskKind::Script("scripts/check-file-size.sh"),
+    ),
+    Task::new(
         "audit-docs",
         "validate authored docs frontmatter, links, and upstream_refs",
         TaskKind::Builtin(Builtin::AuditDocs),
@@ -141,11 +148,6 @@ impl Task {
 enum TaskKind {
     Builtin(Builtin),
     Cargo(&'static [&'static str]),
-    CargoWithEnv {
-        args: &'static [&'static str],
-        key: &'static str,
-        value: &'static str,
-    },
     Command(&'static str, &'static [&'static str]),
     Script(&'static str),
     Sequence(&'static [&'static str]),
@@ -199,9 +201,6 @@ fn run_task(task: &Task, extra: Vec<OsString>) -> Result<()> {
             dev_env::setup()
         }
         TaskKind::Cargo(args) => command::cargo(args, extra),
-        TaskKind::CargoWithEnv { args, key, value } => {
-            command::run_with_env("cargo", args, key, value, extra)
-        }
         TaskKind::Command(program, args) => command::run(program, args, extra),
         TaskKind::Script(path) => command::run(path, std::iter::empty::<&str>(), extra),
         TaskKind::Sequence(tasks) => {
