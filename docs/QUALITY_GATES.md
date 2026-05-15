@@ -9,6 +9,7 @@ scope: "v0"
 source_of_truth: false
 upstream_refs: []
 related:
+  - "docs/contracts/crates-and-dependencies.md"
   - "docs/DECISIONS.md"
   - "docs/DEVELOPMENT.md"
   - "docs/TESTING.md"
@@ -53,6 +54,8 @@ Before merging substantial changes:
 ```bash
 cargo xtask verify
 ```
+
+For crate dependency changes, also review [contracts/crates-and-dependencies.md](./contracts/crates-and-dependencies.md) and [specs/crates-and-dependencies.md](./specs/crates-and-dependencies.md). When `cargo xtask audit-deps` exists, dependency changes should run it before merge.
 
 Run narrower commands when debugging:
 

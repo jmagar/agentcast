@@ -18,6 +18,7 @@ related:
   - "docs/contracts/api.md"
   - "docs/contracts/cli.md"
   - "docs/contracts/config.md"
+  - "docs/contracts/crates-and-dependencies.md"
   - "docs/contracts/errors.md"
   - "docs/contracts/install-plans.md"
   - "docs/contracts/launcher-actions.md"
@@ -46,6 +47,7 @@ Current MVP contracts:
 - [registry.md](./registry.md)
 - [install-plans.md](./install-plans.md)
 - [api.md](./api.md)
+- [crates-and-dependencies.md](./crates-and-dependencies.md)
 - [security.md](./security.md)
 - [schema-ux.md](./schema-ux.md)
 - [errors.md](./errors.md)

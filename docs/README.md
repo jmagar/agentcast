@@ -58,21 +58,22 @@ These docs are development contracts. They are not marketing docs. When code and
 4. [ARCH.md](./ARCH.md) — end-state product shape and core architecture.
 5. [CRATE_BOUNDARIES.md](./CRATE_BOUNDARIES.md) — what each crate owns and must not own.
 6. [CODE_ORGANIZATION.md](./CODE_ORGANIZATION.md) — file/module size rules and simplicity expectations.
-7. [LAUNCHER.md](./LAUNCHER.md) — launcher action product contract.
-8. [MCP_RUNTIME.md](./MCP_RUNTIME.md) — MCP server lifecycle/runtime behavior.
-9. [CLI.md](./CLI.md) — CLI commands, output rules, and exit codes.
-10. [INSTALL_PLANS.md](./INSTALL_PLANS.md) — registry-to-install-plan flow.
-11. [SECURITY.md](./SECURITY.md) — local MCP execution trust model and gates.
-12. [SCHEMA_UX.md](./SCHEMA_UX.md) — JSON Schema input and future form behavior.
-13. [ERRORS.md](./ERRORS.md) — normalized error taxonomy.
-14. [RUNTIME.md](./RUNTIME.md) — the central business/orchestration layer.
-15. [PROTOCOLS.md](./PROTOCOLS.md) — ACP/MCP ownership and adapter rules.
-16. [OBSERVABILITY.md](./OBSERVABILITY.md) — local logs/events/audit expectations.
-17. [TESTING.md](./TESTING.md) — verification gates and expectations.
-18. [DEVELOPMENT.md](./DEVELOPMENT.md) — local development setup and command loop.
-19. [DEV_SPEED.md](./DEV_SPEED.md) — nextest, Cranelift, and fast local workflows.
-20. [QUALITY_GATES.md](./QUALITY_GATES.md) — pre-commit, pre-push, merge, and release gates.
-21. [plans/extract-crates/README.md](./plans/extract-crates/README.md) — how to use Lab as the bootstrap source without importing Lab-specific product gravity.
+7. [contracts/crates-and-dependencies.md](./contracts/crates-and-dependencies.md) — dependency legality, SDK ownership, and crate dependency direction.
+8. [LAUNCHER.md](./LAUNCHER.md) — launcher action product contract.
+9. [MCP_RUNTIME.md](./MCP_RUNTIME.md) — MCP server lifecycle/runtime behavior.
+10. [CLI.md](./CLI.md) — CLI commands, output rules, and exit codes.
+11. [INSTALL_PLANS.md](./INSTALL_PLANS.md) — registry-to-install-plan flow.
+12. [SECURITY.md](./SECURITY.md) — local MCP execution trust model and gates.
+13. [SCHEMA_UX.md](./SCHEMA_UX.md) — JSON Schema input and future form behavior.
+14. [ERRORS.md](./ERRORS.md) — normalized error taxonomy.
+15. [RUNTIME.md](./RUNTIME.md) — the central business/orchestration layer.
+16. [PROTOCOLS.md](./PROTOCOLS.md) — ACP/MCP ownership and adapter rules.
+17. [OBSERVABILITY.md](./OBSERVABILITY.md) — local logs/events/audit expectations.
+18. [TESTING.md](./TESTING.md) — verification gates and expectations.
+19. [DEVELOPMENT.md](./DEVELOPMENT.md) — local development setup and command loop.
+20. [DEV_SPEED.md](./DEV_SPEED.md) — nextest, Cranelift, and fast local workflows.
+21. [QUALITY_GATES.md](./QUALITY_GATES.md) — pre-commit, pre-push, merge, and release gates.
+22. [plans/extract-crates/README.md](./plans/extract-crates/README.md) — how to use Lab as the bootstrap source without importing Lab-specific product gravity.
 
 ## Contracts And Specs
 

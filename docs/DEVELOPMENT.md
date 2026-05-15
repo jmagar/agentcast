@@ -11,6 +11,7 @@ upstream_refs:
   - "docs/references/jmagar/jmagar-lab.xml"
 related:
   - "docs/CODE_ORGANIZATION.md"
+  - "docs/contracts/crates-and-dependencies.md"
   - "docs/DECISIONS.md"
   - "docs/DEV_SPEED.md"
   - "docs/QUALITY_GATES.md"
@@ -74,6 +75,8 @@ Put durable non-secret settings in `config.toml`.
 ## Code Shape
 
 Keep modules small and focused. Follow [CODE_ORGANIZATION.md](./CODE_ORGANIZATION.md) for file/function thresholds.
+
+Place dependencies according to [contracts/crates-and-dependencies.md](./contracts/crates-and-dependencies.md). Shared dependency versions belong in root `[workspace.dependencies]`.
 
 Use source-side test sidecars by default. Do not make internals public just to test them.
 

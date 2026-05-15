@@ -93,6 +93,11 @@ const TASKS: &[Task] = &[
         TaskKind::Script("scripts/review-changes.sh"),
     ),
     Task::new(
+        "check-deps",
+        "scripts/check-dependency-updates.sh",
+        TaskKind::Script("scripts/check-dependency-updates.sh"),
+    ),
+    Task::new(
         "audit-docs",
         "validate authored docs frontmatter, links, and upstream_refs",
         TaskKind::Builtin(Builtin::AuditDocs),

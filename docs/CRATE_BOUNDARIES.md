@@ -9,6 +9,7 @@ scope: "v0"
 source_of_truth: true
 upstream_refs: []
 related:
+  - "docs/contracts/crates-and-dependencies.md"
   - "docs/MVP.md"
 last_reviewed: "2026-05-13"
 last_modified: "2026-05-13"
@@ -21,6 +22,8 @@ review_basis: "cross-referenced against local docs/references snapshot"
 # Crate Boundaries
 
 This file defines ownership boundaries. New code should be placed by ownership, not convenience.
+
+Dependency legality, SDK ownership, and crate dependency direction are defined in [contracts/crates-and-dependencies.md](./contracts/crates-and-dependencies.md).
 
 These are target boundaries for the full architecture. The MCP launcher MVP in [MVP.md](./MVP.md) controls implementation order. Crates for post-v0 capabilities may exist as stubs or contracts before they are feature-complete.
 

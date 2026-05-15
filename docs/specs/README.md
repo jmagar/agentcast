@@ -19,6 +19,7 @@ related:
   - "docs/specs/app-surfaces.md"
   - "docs/specs/cli.md"
   - "docs/specs/config.md"
+  - "docs/specs/crates-and-dependencies.md"
   - "docs/specs/errors.md"
   - "docs/specs/install-plans.md"
   - "docs/specs/launcher-actions.md"
@@ -51,6 +52,7 @@ Current MVP specs:
 - [errors.md](./errors.md)
 - [api.md](./api.md)
 - [app-surfaces.md](./app-surfaces.md)
+- [crates-and-dependencies.md](./crates-and-dependencies.md)
 
 If a spec contradicts a contract, revise the contract explicitly or treat the contract as authoritative.
 
