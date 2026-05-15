@@ -10,6 +10,7 @@ description = "AgentCast configuration loading, app paths, environment handling,
 
 [dependencies]
 agent-core = { path = "../agent-core" }
+agent-protocol = { path = "../agent-protocol" }
 
 serde.workspace = true
 serde_json.workspace = true
