@@ -16,6 +16,9 @@ fn projects_runtime_tools_to_stable_actions() {
             description: Some("Return input".to_string()),
             input_schema: json!({"type": "object"}),
         }],
+        resources: Vec::new(),
+        resource_templates: Vec::new(),
+        prompts: Vec::new(),
     };
 
     let catalog = GatewayCatalog::from_snapshots(vec![snapshot]);
@@ -40,6 +43,9 @@ fn reports_duplicate_action_ids() {
                 description: None,
                 input_schema: json!({}),
             }],
+            resources: Vec::new(),
+            resource_templates: Vec::new(),
+            prompts: Vec::new(),
         },
         RuntimeCatalogSnapshot {
             server_id: McpServerId::new("local"),
@@ -52,6 +58,9 @@ fn reports_duplicate_action_ids() {
                 description: None,
                 input_schema: json!({}),
             }],
+            resources: Vec::new(),
+            resource_templates: Vec::new(),
+            prompts: Vec::new(),
         },
     ];
 
@@ -75,6 +84,9 @@ fn catalog_exports_search_documents_without_ranking() {
             description: Some("Inspect working tree".to_string()),
             input_schema: json!({"type": "object"}),
         }],
+        resources: Vec::new(),
+        resource_templates: Vec::new(),
+        prompts: Vec::new(),
     }]);
 
     let docs = catalog.search_documents();
