@@ -10,24 +10,9 @@ description = "AgentCast gateway for exposing, filtering, routing, and bridging 
 
 [dependencies]
 agent-core = { path = "../agent-core" }
-agent-config = { path = "../agent-config" }
 agent-protocol = { path = "../agent-protocol" }
-agent-acp = { path = "../agent-acp" }
-agent-mcp = { path = "../agent-mcp" }
 agent-runtime = { path = "../agent-runtime" }
 
-rmcp.workspace = true
-agent-client-protocol.workspace = true
-async-trait.workspace = true
-tokio-util.workspace = true
-
-tokio.workspace = true
-futures.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-anyhow.workspace = true
-tracing.workspace = true
-uuid.workspace = true
-jiff.workspace = true
-url.workspace = true
