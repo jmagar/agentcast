@@ -26,6 +26,7 @@ agent-auth = { path = "../agent-auth" }
 agent-api = { path = "../agent-api" }
 agent-cli = { path = "../agent-cli" }
 
+axum.workspace = true
 tokio.workspace = true
 clap.workspace = true
 serde.workspace = true

@@ -365,6 +365,7 @@ dependencies = [
  "agent-registry",
  "agent-runtime",
  "anyhow",
+ "axum",
  "clap",
  "jiff",
  "serde",
