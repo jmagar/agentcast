@@ -14,6 +14,17 @@ scripts/check-dependency-updates.sh --fail-on-updates
 
 Reports lockfile-compatible updates from `cargo update --dry-run`, then checks direct root `[workspace.dependencies]` against crates.io with `cargo search` unless `--skip-search` is used.
 
+## Cargo Deny
+
+Dependency license, advisory, ban, and source checks are configured in root `deny.toml`.
+
+```bash
+cargo xtask deny
+just deny
+```
+
+This is an explicit/manual dependency quality task. It is not a pre-commit hook.
+
 ## `check-file-size.sh`
 
 Checks tracked Rust/TypeScript source files against AgentCast module-size guardrails.

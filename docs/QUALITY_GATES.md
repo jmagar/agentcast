@@ -64,6 +64,8 @@ cargo xtask fmt-check
 cargo xtask check
 cargo xtask clippy
 cargo xtask nextest
+cargo xtask nextest-ci
+cargo xtask deny
 cargo xtask test
 ```
 

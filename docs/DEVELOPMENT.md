@@ -37,6 +37,7 @@ rustup --version
 cargo nextest --version
 lefthook version
 gitleaks version
+cargo deny --version
 taplo --version
 just --version
 ```
@@ -77,6 +78,7 @@ cargo xtask check
 cargo xtask nextest
 cargo xtask nextest-ci
 cargo xtask file-size
+cargo xtask deny
 cargo xtask ci
 cargo xtask verify
 ```
@@ -90,6 +92,7 @@ just check
 just test
 just test-ci
 just file-size
+just deny
 just ci
 just verify
 ```

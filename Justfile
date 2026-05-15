@@ -45,6 +45,9 @@ audit-docs:
 file-size:
     cargo xtask file-size
 
+deny:
+    cargo xtask deny
+
 secrets:
     cargo xtask secrets
 

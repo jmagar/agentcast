@@ -10,6 +10,7 @@ const REQUIRED_TOOLS: &[ToolCheck] = &[
     ToolCheck::new("cargo", &["nextest", "--version"]),
     ToolCheck::new("lefthook", &["version"]),
     ToolCheck::new("gitleaks", &["version"]),
+    ToolCheck::new("cargo", &["deny", "--version"]),
     ToolCheck::new("taplo", &["--version"]),
     ToolCheck::new("just", &["--version"]),
 ];

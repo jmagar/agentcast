@@ -1,0 +1,48 @@
+[graph]
+targets = []
+all-features = false
+no-default-features = false
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = []
+
+[licenses]
+version = 2
+allow = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "CC0-1.0",
+  "CDLA-Permissive-2.0",
+  "ISC",
+  "MIT",
+  "MPL-2.0",
+  "Unicode-3.0",
+  "Zlib",
+]
+confidence-threshold = 0.8
+
+[bans]
+# Keep duplicate versions allowed until the real v0 dependency graph settles.
+# Dependency convergence should happen deliberately during crate implementation,
+# not as noisy baseline automation before feature code exists.
+multiple-versions = "allow"
+wildcards = "allow"
+allow-wildcard-paths = true
+
+deny = [
+  { name = "openssl" },
+  { name = "openssl-sys" },
+]
+
+skip = []
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

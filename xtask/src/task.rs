@@ -25,6 +25,7 @@ const INSTALL_HOOKS: &[&str] = &["install"];
 const PRE_COMMIT: &[&str] = &["run", "pre-commit"];
 const PRE_PUSH: &[&str] = &["run", "pre-push"];
 const GITLEAKS_DETECT: &[&str] = &["detect", "--no-banner"];
+const CARGO_DENY_CHECK: &[&str] = &["deny", "check"];
 
 const TASKS: &[Task] = &[
     Task::new(
@@ -67,8 +68,8 @@ const TASKS: &[Task] = &[
     ),
     Task::new(
         "ci",
-        "fmt-check, check, clippy, nextest-ci",
-        TaskKind::Sequence(&["fmt-check", "check", "clippy", "nextest-ci"]),
+        "fmt-check, check, clippy, nextest-ci, deny",
+        TaskKind::Sequence(&["fmt-check", "check", "clippy", "nextest-ci", "deny"]),
     ),
     Task::new(
         "verify",
@@ -114,6 +115,11 @@ const TASKS: &[Task] = &[
         "file-size",
         "scripts/check-file-size.sh",
         TaskKind::Script("scripts/check-file-size.sh"),
+    ),
+    Task::new(
+        "deny",
+        "cargo deny check",
+        TaskKind::Cargo(CARGO_DENY_CHECK),
     ),
     Task::new(
         "audit-docs",
