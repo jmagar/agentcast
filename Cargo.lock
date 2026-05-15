@@ -73,6 +73,7 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+ "url",
  "uuid",
 ]
 
@@ -202,11 +203,13 @@ dependencies = [
  "agent-protocol",
  "agent-runtime",
  "agent-search",
+ "agent-store",
  "hex",
  "serde",
  "serde_json",
  "sha2 0.11.0",
  "thiserror 2.0.18",
+ "url",
 ]
 
 [[package]]
@@ -388,6 +391,7 @@ dependencies = [
 name = "agent-store"
 version = "0.1.0"
 dependencies = [
+ "agent-auth",
  "agent-config",
  "agent-core",
  "agent-protocol",

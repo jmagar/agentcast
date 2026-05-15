@@ -10,6 +10,7 @@ description = "AgentCast persistence traits, SQLite store implementations, migra
 
 [dependencies]
 agent-core = { path = "../agent-core" }
+agent-auth = { path = "../agent-auth" }
 agent-config = { path = "../agent-config" }
 agent-protocol = { path = "../agent-protocol" }
 
@@ -22,4 +23,3 @@ thiserror.workspace = true
 tracing.workspace = true
 uuid.workspace = true
 jiff.workspace = true
-
