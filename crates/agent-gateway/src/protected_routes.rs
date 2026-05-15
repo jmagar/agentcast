@@ -94,10 +94,7 @@ impl ProtectedRouteIndex {
 
     pub fn resolve_metadata(&self, host: &str, path: &str) -> Option<&ResolvedProtectedRoute> {
         let host = normalize_host(host).ok()?;
-        let route_key = self
-            .metadata_routes
-            .get(&(host, path.to_string()))?
-            .clone();
+        let route_key = self.metadata_routes.get(&(host, path.to_string()))?.clone();
         self.routes.get(&route_key)
     }
 }

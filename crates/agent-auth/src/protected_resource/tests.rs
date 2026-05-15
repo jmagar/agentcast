@@ -13,7 +13,10 @@ fn metadata_serializes_authorization_servers_and_scopes() {
     let value = serde_json::to_value(&metadata).expect("serialize metadata");
 
     assert_eq!(value["resource"], "https://mcp.example.test/syslog");
-    assert_eq!(value["authorization_servers"][0], "https://auth.example.test");
+    assert_eq!(
+        value["authorization_servers"][0],
+        "https://auth.example.test"
+    );
     assert_eq!(value["scopes_supported"][0], "mcp:read");
     assert_eq!(value["bearer_methods_supported"][0], "header");
 }

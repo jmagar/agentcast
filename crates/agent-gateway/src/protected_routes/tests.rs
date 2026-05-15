@@ -91,6 +91,9 @@ fn projects_protected_resource_metadata() {
     let metadata = resolved.protected_resource_metadata();
 
     assert_eq!(metadata.resource, "https://mcp.example.test/syslog");
-    assert_eq!(metadata.authorization_servers[0], "https://auth.example.test");
+    assert_eq!(
+        metadata.authorization_servers[0],
+        "https://auth.example.test"
+    );
     assert_eq!(metadata.scopes_supported.as_slice(), &["mcp:read"]);
 }

@@ -197,6 +197,7 @@ dependencies = [
 name = "agent-gateway"
 version = "0.1.0"
 dependencies = [
+ "agent-auth",
  "agent-core",
  "agent-protocol",
  "agent-runtime",

@@ -41,10 +41,7 @@ impl AuthChallenge {
         if let Some(error) = &self.error {
             parts.push(format!("error=\"{error}\""));
         }
-        parts.push(format!(
-            "resource_metadata=\"{}\"",
-            self.resource_metadata
-        ));
+        parts.push(format!("resource_metadata=\"{}\"", self.resource_metadata));
         if !self.scope.is_empty() {
             parts.push(format!("scope=\"{}\"", self.scope.as_header_value()));
         }
