@@ -12,12 +12,9 @@ description = "AgentCast authentication primitives, bearer/session auth, and opt
 agent-core = { path = "../agent-core" }
 agent-config = { path = "../agent-config" }
 
-rusqlite.workspace = true
 sha2.workspace = true
 hex.workspace = true
 
-axum.workspace = true
-tower.workspace = true
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true
