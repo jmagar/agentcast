@@ -4,13 +4,14 @@ use agent_runtime::{McpRuntime, RuntimeError};
 use agent_search::{SearchIndex, SearchQuery};
 use serde::Serialize;
 use serde_json::Value;
+use std::sync::Arc;
 
 #[cfg(test)]
 mod tests;
 
 #[derive(Debug)]
 pub struct GatewayApi {
-    runtime: McpRuntime,
+    runtime: Arc<McpRuntime>,
     gateway: GatewayService,
 }
 
@@ -18,7 +19,14 @@ impl GatewayApi {
     pub async fn start(configs: Vec<McpServerConfig>) -> Self {
         let runtime = McpRuntime::start(configs).await;
         let gateway = GatewayService::from_runtime_snapshots(runtime.snapshots());
-        Self { runtime, gateway }
+        Self {
+            runtime: Arc::new(runtime),
+            gateway,
+        }
+    }
+
+    pub fn runtime(&self) -> Arc<McpRuntime> {
+        self.runtime.clone()
     }
 
     pub fn list_actions(&self) -> Vec<GatewayApiAction> {

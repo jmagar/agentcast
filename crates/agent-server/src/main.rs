@@ -1,5 +1,7 @@
-use agent_api::{GatewayApi, gateway_router};
+use agent_api::{GatewayApi, gateway_router, protected_mcp_router};
+use agent_auth::ScopeSet;
 use agent_config::parse_mcp_json;
+use agent_gateway::{ProtectedRouteConfig, ProtectedRouteIndex, ProtectedRouteTarget};
 use agent_protocol::McpServerConfig;
 use clap::Parser;
 use std::{net::SocketAddr, path::PathBuf};
@@ -13,6 +15,18 @@ struct Args {
     mcp_config: Option<PathBuf>,
     #[arg(long)]
     enable_imported: bool,
+    #[arg(long)]
+    protected_mcp_host: Option<String>,
+    #[arg(long)]
+    protected_mcp_path: Option<String>,
+    #[arg(long)]
+    protected_mcp_server: Option<String>,
+    #[arg(long)]
+    protected_mcp_resource: Option<String>,
+    #[arg(long = "protected-mcp-auth-server")]
+    protected_mcp_auth_servers: Vec<String>,
+    #[arg(long, default_value = "mcp:read")]
+    protected_mcp_scopes: String,
 }
 
 #[tokio::main]
@@ -21,8 +35,13 @@ async fn main() -> anyhow::Result<()> {
 
     let args = Args::parse();
     let configs = load_mcp_configs(args.mcp_config.as_ref(), args.enable_imported)?;
+    let protected_routes = protected_route_index(&args)?;
     let api = GatewayApi::start(configs).await;
-    let router = gateway_router(api);
+    let runtime = api.runtime();
+    let mut router = gateway_router(api);
+    if let Some(routes) = protected_routes {
+        router = router.merge(protected_mcp_router(routes, runtime));
+    }
     let listener = tokio::net::TcpListener::bind(args.listen).await?;
 
     tracing::info!(listen = %args.listen, "serving AgentCast gateway API");
@@ -46,6 +65,47 @@ fn load_mcp_configs(
         }
     }
     Ok(configs)
+}
+
+fn protected_route_index(args: &Args) -> anyhow::Result<Option<ProtectedRouteIndex>> {
+    let any_protected_arg = args.protected_mcp_host.is_some()
+        || args.protected_mcp_path.is_some()
+        || args.protected_mcp_server.is_some()
+        || args.protected_mcp_resource.is_some()
+        || !args.protected_mcp_auth_servers.is_empty();
+    if !any_protected_arg {
+        return Ok(None);
+    }
+
+    let host = required_arg(args.protected_mcp_host.as_ref(), "--protected-mcp-host")?;
+    let path = required_arg(args.protected_mcp_path.as_ref(), "--protected-mcp-path")?;
+    let server = required_arg(args.protected_mcp_server.as_ref(), "--protected-mcp-server")?;
+    if args.protected_mcp_auth_servers.is_empty() {
+        anyhow::bail!("--protected-mcp-auth-server is required for protected MCP routes");
+    }
+
+    let resource_uri = args
+        .protected_mcp_resource
+        .clone()
+        .unwrap_or_else(|| format!("http://{host}{path}"));
+    let routes = ProtectedRouteIndex::from_routes(vec![ProtectedRouteConfig {
+        name: server.clone(),
+        enabled: true,
+        public_host: host.clone(),
+        public_path: path.clone(),
+        resource_uri,
+        authorization_servers: args.protected_mcp_auth_servers.clone(),
+        required_scopes: ScopeSet::parse(&args.protected_mcp_scopes)?,
+        target: ProtectedRouteTarget::UpstreamMcp {
+            server_id: agent_protocol::McpServerId::new(server),
+        },
+    }])?;
+
+    Ok(Some(routes))
+}
+
+fn required_arg<'a>(value: Option<&'a String>, name: &str) -> anyhow::Result<&'a String> {
+    value.ok_or_else(|| anyhow::anyhow!("{name} is required for protected MCP routes"))
 }
 
 #[cfg(test)]
@@ -99,5 +159,42 @@ mod tests {
             args: Vec::new(),
             env: BTreeMap::new(),
         };
+    }
+
+    #[test]
+    fn protected_route_index_requires_complete_route_flags() {
+        let args = Args {
+            listen: "127.0.0.1:8787".parse().expect("listen"),
+            mcp_config: None,
+            enable_imported: false,
+            protected_mcp_host: Some("mcp.example.test".to_string()),
+            protected_mcp_path: None,
+            protected_mcp_server: Some("fixture".to_string()),
+            protected_mcp_resource: None,
+            protected_mcp_auth_servers: vec!["https://auth.example.test".to_string()],
+            protected_mcp_scopes: "mcp:read".to_string(),
+        };
+
+        assert!(protected_route_index(&args).is_err());
+    }
+
+    #[test]
+    fn protected_route_index_builds_generic_upstream_route() {
+        let args = Args {
+            listen: "127.0.0.1:8787".parse().expect("listen"),
+            mcp_config: None,
+            enable_imported: false,
+            protected_mcp_host: Some("mcp.example.test".to_string()),
+            protected_mcp_path: Some("/syslog".to_string()),
+            protected_mcp_server: Some("fixture".to_string()),
+            protected_mcp_resource: Some("https://mcp.example.test/syslog".to_string()),
+            protected_mcp_auth_servers: vec!["https://auth.example.test".to_string()],
+            protected_mcp_scopes: "mcp:read".to_string(),
+        };
+
+        let routes = protected_route_index(&args)
+            .expect("route index")
+            .expect("protected routes");
+        assert!(routes.resolve("mcp.example.test", "/syslog").is_some());
     }
 }
