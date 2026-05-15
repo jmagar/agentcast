@@ -14,6 +14,9 @@ fn runtime_snapshot_preserves_tool_metadata() {
             description: Some("Return input".to_string()),
             input_schema: json!({"type": "object"}),
         }],
+        resources: Vec::new(),
+        resource_templates: Vec::new(),
+        prompts: Vec::new(),
     };
 
     assert_eq!(snapshot.server_id.as_str(), "local");

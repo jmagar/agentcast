@@ -11,6 +11,7 @@ description = "AgentCast local runtime for process supervision, workspaces, sess
 [dependencies]
 agent-core = { path = "../agent-core" }
 agent-config = { path = "../agent-config" }
+agent-mcp = { path = "../agent-mcp" }
 agent-protocol = { path = "../agent-protocol" }
 
 process-wrap.workspace = true

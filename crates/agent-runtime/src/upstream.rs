@@ -12,9 +12,3 @@ pub struct ToolCallRequest {
 pub struct ToolCallResponse {
     pub output: Value,
 }
-
-pub trait UpstreamCaller {
-    type Error;
-
-    fn call_tool(&self, request: ToolCallRequest) -> Result<ToolCallResponse, Self::Error>;
-}
