@@ -46,6 +46,10 @@ impl fmt::Display for McpToolId {
 pub struct LauncherActionId(String);
 
 impl LauncherActionId {
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
     pub fn from_server_tool(server_id: &McpServerId, tool_id: &McpToolId) -> Self {
         Self(format!("mcp:{}:{}", server_id.as_str(), tool_id.as_str()))
     }

@@ -3,7 +3,7 @@ pub mod error;
 pub mod protected_routes;
 pub mod router;
 
-pub use catalog::{CollisionReport, GatewayCatalog};
+pub use catalog::{CollisionReport, GatewayCatalog, GatewaySearchDocument};
 pub use error::GatewayError;
 pub use protected_routes::{
     ProtectedRouteConfig, ProtectedRouteIndex, ProtectedRouteTarget, ResolvedProtectedRoute,

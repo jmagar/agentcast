@@ -13,7 +13,10 @@ agent-core = { path = "../agent-core" }
 agent-auth = { path = "../agent-auth" }
 agent-protocol = { path = "../agent-protocol" }
 agent-runtime = { path = "../agent-runtime" }
+agent-search = { path = "../agent-search" }
 
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+sha2.workspace = true
+hex.workspace = true

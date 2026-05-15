@@ -1,5 +1,6 @@
 use agent_protocol::{LauncherAction, LauncherActionId, LauncherActionKind};
 use agent_runtime::RuntimeCatalogSnapshot;
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 #[cfg(test)]
@@ -17,6 +18,8 @@ pub struct CollisionReport {
     pub existing_display_name: String,
     pub rejected_display_name: String,
 }
+
+pub type GatewaySearchDocument = agent_search::SearchDocument;
 
 impl GatewayCatalog {
     pub fn from_snapshots(snapshots: Vec<RuntimeCatalogSnapshot>) -> Self {
@@ -52,6 +55,44 @@ impl GatewayCatalog {
         Self {
             actions: actions_by_id.into_values().collect(),
             collisions,
+        }
+    }
+
+    pub fn search_documents(&self) -> Vec<GatewaySearchDocument> {
+        let catalog_hash = self.catalog_hash();
+        self.actions
+            .iter()
+            .map(|action| GatewaySearchDocument {
+                action_id: action.id.clone(),
+                name: action.display_name.clone(),
+                description: action.description.clone(),
+                metadata: action_metadata(action),
+                catalog_hash: catalog_hash.clone(),
+                truncated: false,
+            })
+            .collect()
+    }
+
+    pub fn catalog_hash(&self) -> String {
+        let mut hasher = Sha256::new();
+        for action in &self.actions {
+            hasher.update(action.id.as_str().as_bytes());
+            hasher.update([0]);
+            hasher.update(action.display_name.as_bytes());
+            hasher.update([0]);
+            if let Some(description) = &action.description {
+                hasher.update(description.as_bytes());
+            }
+            hasher.update([0]);
+        }
+        hex::encode(hasher.finalize())
+    }
+}
+
+fn action_metadata(action: &LauncherAction) -> Vec<String> {
+    match &action.kind {
+        LauncherActionKind::McpTool { server_id, tool_id } => {
+            vec![server_id.to_string(), tool_id.to_string(), "mcp tool".to_string()]
         }
     }
 }
