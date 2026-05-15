@@ -33,6 +33,17 @@ pub struct ResolvedProtectedRoute {
     pub target: ProtectedRouteTarget,
 }
 
+impl ResolvedProtectedRoute {
+    pub fn protected_resource_metadata(&self) -> agent_auth::ProtectedResourceMetadata {
+        agent_auth::ProtectedResourceMetadata {
+            resource: self.resource_uri.clone(),
+            authorization_servers: self.authorization_servers.clone(),
+            scopes_supported: self.required_scopes.clone(),
+            bearer_methods_supported: vec!["header".to_string()],
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct ProtectedRouteIndex {
     routes: BTreeMap<(String, String), ResolvedProtectedRoute>,

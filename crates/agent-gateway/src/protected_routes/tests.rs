@@ -75,3 +75,22 @@ fn exact_metadata_path_resolves_route() {
 
     assert_eq!(resolved.name, "syslog");
 }
+
+#[test]
+fn projects_protected_resource_metadata() {
+    let index =
+        ProtectedRouteIndex::from_routes(vec![route("syslog", "mcp.example.test", "/syslog")])
+            .expect("build index");
+    let resolved = index
+        .resolve_metadata(
+            "mcp.example.test",
+            "/.well-known/oauth-protected-resource/syslog",
+        )
+        .expect("metadata route resolved");
+
+    let metadata = resolved.protected_resource_metadata();
+
+    assert_eq!(metadata.resource, "https://mcp.example.test/syslog");
+    assert_eq!(metadata.authorization_servers[0], "https://auth.example.test");
+    assert_eq!(metadata.scopes_supported.as_slice(), &["mcp:read"]);
+}
