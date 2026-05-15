@@ -56,8 +56,10 @@ where
             return Err(GatewayOAuthError::UnsupportedProvider);
         }
 
-        let scope = metadata
-            .selected_scope(request.challenge_scopes.as_ref(), request.protected_resource_scopes.as_ref());
+        let scope = metadata.selected_scope(
+            request.challenge_scopes.as_ref(),
+            request.protected_resource_scopes.as_ref(),
+        );
         let pending = PendingOAuthState {
             state: request.state.clone(),
             subject: request.subject.clone(),
@@ -128,7 +130,9 @@ where
         subject: &str,
         upstream_id: &str,
     ) -> Result<Option<OAuthCredential>, GatewayOAuthError> {
-        self.store.credential(subject, upstream_id).map_err(Into::into)
+        self.store
+            .credential(subject, upstream_id)
+            .map_err(Into::into)
     }
 }
 

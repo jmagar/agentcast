@@ -13,8 +13,18 @@ fn pending_state_is_consumed_once() {
         })
         .expect("put state");
 
-    assert!(store.consume_pending_state("state-1").expect("consume").is_some());
-    assert!(store.consume_pending_state("state-1").expect("consume").is_none());
+    assert!(
+        store
+            .consume_pending_state("state-1")
+            .expect("consume")
+            .is_some()
+    );
+    assert!(
+        store
+            .consume_pending_state("state-1")
+            .expect("consume")
+            .is_none()
+    );
 }
 
 #[test]
@@ -50,5 +60,10 @@ fn clear_removes_credentials_and_pending_state_for_scope() {
             .expect("credential")
             .is_none()
     );
-    assert!(store.consume_pending_state("state-1").expect("state").is_none());
+    assert!(
+        store
+            .consume_pending_state("state-1")
+            .expect("state")
+            .is_none()
+    );
 }

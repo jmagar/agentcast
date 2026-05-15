@@ -16,7 +16,11 @@ fn doc(id: &str, name: &str, description: Option<&str>) -> SearchDocument {
 fn exact_action_name_ranks_first() {
     let index = SearchIndex::new(vec![
         doc("mcp:git:status-long", "Git status long", Some("git status")),
-        doc("mcp:git:status", "Git status", Some("inspect repository state")),
+        doc(
+            "mcp:git:status",
+            "Git status",
+            Some("inspect repository state"),
+        ),
     ]);
 
     let results = index.search(SearchQuery::new("git status").limit(10));

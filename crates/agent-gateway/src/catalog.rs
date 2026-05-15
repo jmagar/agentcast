@@ -92,7 +92,11 @@ impl GatewayCatalog {
 fn action_metadata(action: &LauncherAction) -> Vec<String> {
     match &action.kind {
         LauncherActionKind::McpTool { server_id, tool_id } => {
-            vec![server_id.to_string(), tool_id.to_string(), "mcp tool".to_string()]
+            vec![
+                server_id.to_string(),
+                tool_id.to_string(),
+                "mcp tool".to_string(),
+            ]
         }
     }
 }

@@ -7,14 +7,21 @@ mod tests;
 
 pub trait OAuthStore {
     fn put_pending_state(&mut self, state: PendingOAuthState) -> Result<(), StoreError>;
-    fn consume_pending_state(&mut self, state: &str) -> Result<Option<PendingOAuthState>, StoreError>;
+    fn consume_pending_state(
+        &mut self,
+        state: &str,
+    ) -> Result<Option<PendingOAuthState>, StoreError>;
     fn put_credential(&mut self, credential: OAuthCredential) -> Result<(), StoreError>;
     fn credential(
         &self,
         subject: &str,
         upstream_id: &str,
     ) -> Result<Option<OAuthCredential>, StoreError>;
-    fn clear_subject_upstream(&mut self, subject: &str, upstream_id: &str) -> Result<(), StoreError>;
+    fn clear_subject_upstream(
+        &mut self,
+        subject: &str,
+        upstream_id: &str,
+    ) -> Result<(), StoreError>;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -29,7 +36,10 @@ impl OAuthStore for InMemoryOAuthStore {
         Ok(())
     }
 
-    fn consume_pending_state(&mut self, state: &str) -> Result<Option<PendingOAuthState>, StoreError> {
+    fn consume_pending_state(
+        &mut self,
+        state: &str,
+    ) -> Result<Option<PendingOAuthState>, StoreError> {
         Ok(self.pending_states.remove(state))
     }
 
@@ -52,7 +62,11 @@ impl OAuthStore for InMemoryOAuthStore {
             .cloned())
     }
 
-    fn clear_subject_upstream(&mut self, subject: &str, upstream_id: &str) -> Result<(), StoreError> {
+    fn clear_subject_upstream(
+        &mut self,
+        subject: &str,
+        upstream_id: &str,
+    ) -> Result<(), StoreError> {
         self.credentials
             .remove(&(subject.to_string(), upstream_id.to_string()));
         self.pending_states

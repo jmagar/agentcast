@@ -54,7 +54,11 @@ fn begin_authorization_records_pending_state_and_scope() {
         .expect("begin auth");
 
     assert!(result.authorization_url.contains("response_type=code"));
-    assert!(result.authorization_url.contains("code_challenge_method=S256"));
+    assert!(
+        result
+            .authorization_url
+            .contains("code_challenge_method=S256")
+    );
     assert_eq!(result.selected_scope.expect("scope").as_slice(), &["repo"]);
 }
 
