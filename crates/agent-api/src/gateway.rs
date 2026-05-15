@@ -2,6 +2,7 @@ use agent_gateway::{GatewayError, GatewayService};
 use agent_protocol::{LauncherActionId, McpServerConfig, McpServerId, ToolInvocation};
 use agent_runtime::{McpRuntime, RuntimeError};
 use agent_search::{SearchIndex, SearchQuery};
+use serde::Serialize;
 use serde_json::Value;
 
 #[cfg(test)]
@@ -70,14 +71,14 @@ impl GatewayApi {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct GatewayApiAction {
     pub id: String,
     pub display_name: String,
     pub description: Option<String>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct GatewayApiSearchResult {
     pub action_id: String,
     pub name: String,
