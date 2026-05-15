@@ -1,5 +1,6 @@
 mod audit;
 mod command;
+mod dev_env;
 mod task;
 
 use std::process::ExitCode;
@@ -10,6 +11,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     Usage(String),
     Audit(Vec<String>),
+    DevEnv(Vec<String>),
     Io(std::io::Error),
     Failed { program: String, code: Option<i32> },
 }
@@ -25,6 +27,16 @@ fn main() -> ExitCode {
         }
         Err(Error::Audit(errors)) => {
             eprintln!("xtask audit-docs failed with {} issue(s):", errors.len());
+            for error in errors {
+                eprintln!("- {error}");
+            }
+            ExitCode::FAILURE
+        }
+        Err(Error::DevEnv(errors)) => {
+            eprintln!(
+                "xtask dev environment check failed with {} issue(s):",
+                errors.len()
+            );
             for error in errors {
                 eprintln!("- {error}");
             }

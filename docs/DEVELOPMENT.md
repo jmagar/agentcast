@@ -40,7 +40,19 @@ taplo --version
 just --version
 ```
 
-Install hooks explicitly:
+Use the Cargo-native setup task to verify the local toolchain and install or sync Git hooks:
+
+```bash
+cargo xtask setup
+```
+
+Use the doctor task when you only want to verify the environment without modifying hooks:
+
+```bash
+cargo xtask doctor
+```
+
+Install hooks explicitly when needed:
 
 ```bash
 cargo xtask hooks
@@ -51,6 +63,8 @@ cargo xtask hooks
 Use Cargo-native task wrappers first:
 
 ```bash
+cargo xtask setup
+cargo xtask doctor
 cargo xtask check
 cargo xtask nextest
 cargo xtask ci
@@ -60,6 +74,8 @@ cargo xtask verify
 Use `just` aliases when preferred:
 
 ```bash
+just setup
+just doctor
 just check
 just test
 just ci

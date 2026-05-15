@@ -3,6 +3,12 @@ set dotenv-load := false
 default:
     @just --list
 
+setup:
+    cargo xtask setup
+
+doctor:
+    cargo xtask doctor
+
 fmt:
     cargo xtask fmt
 

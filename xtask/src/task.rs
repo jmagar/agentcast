@@ -3,6 +3,7 @@ use std::ffi::OsString;
 
 use crate::audit;
 use crate::command;
+use crate::dev_env;
 use crate::{Error, Result};
 
 const CHECK: &[&str] = &["check", "--workspace"];
@@ -25,6 +26,16 @@ const PRE_PUSH: &[&str] = &["run", "pre-push"];
 const GITLEAKS_DETECT: &[&str] = &["detect", "--no-banner"];
 
 const TASKS: &[Task] = &[
+    Task::new(
+        "setup",
+        "verify required dev tools and install/sync hooks",
+        TaskKind::Builtin(Builtin::Setup),
+    ),
+    Task::new(
+        "doctor",
+        "verify required dev tools and hook files",
+        TaskKind::Builtin(Builtin::Doctor),
+    ),
     Task::new("check", "cargo check --workspace", TaskKind::Cargo(CHECK)),
     Task::new(
         "check-cranelift",
@@ -143,6 +154,8 @@ enum TaskKind {
 #[derive(Clone, Copy)]
 enum Builtin {
     AuditDocs,
+    Doctor,
+    Setup,
 }
 
 pub fn run() -> Result<()> {
@@ -176,6 +189,14 @@ fn run_task(task: &Task, extra: Vec<OsString>) -> Result<()> {
         TaskKind::Builtin(Builtin::AuditDocs) => {
             reject_extra(task.name, &extra)?;
             audit::run()
+        }
+        TaskKind::Builtin(Builtin::Doctor) => {
+            reject_extra(task.name, &extra)?;
+            dev_env::doctor()
+        }
+        TaskKind::Builtin(Builtin::Setup) => {
+            reject_extra(task.name, &extra)?;
+            dev_env::setup()
         }
         TaskKind::Cargo(args) => command::cargo(args, extra),
         TaskKind::CargoWithEnv { args, key, value } => {
