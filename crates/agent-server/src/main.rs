@@ -1,6 +1,6 @@
 use agent_api::{GatewayApi, gateway_router, oauth_router, protected_mcp_router};
 use agent_auth::ScopeSet;
-use agent_config::parse_mcp_json;
+use agent_config::{discover_known_mcp_configs, parse_mcp_json};
 use agent_gateway::{ProtectedRouteConfig, ProtectedRouteIndex, ProtectedRouteTarget};
 use agent_protocol::McpServerConfig;
 use clap::Parser;
@@ -13,6 +13,8 @@ struct Args {
     listen: SocketAddr,
     #[arg(long)]
     mcp_config: Option<PathBuf>,
+    #[arg(long)]
+    discover_mcp: bool,
     #[arg(long)]
     enable_imported: bool,
     #[arg(long)]
@@ -34,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
     let args = Args::parse();
-    let configs = load_mcp_configs(args.mcp_config.as_ref(), args.enable_imported)?;
+    let configs = load_mcp_configs(&args)?;
     let protected_routes = protected_route_index(&args)?;
     let api = GatewayApi::start(configs).await;
     let runtime = api.runtime();
@@ -49,22 +51,39 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn load_mcp_configs(
-    path: Option<&PathBuf>,
-    enable_imported: bool,
-) -> anyhow::Result<Vec<McpServerConfig>> {
-    let Some(path) = path else {
-        return Ok(Vec::new());
-    };
+fn load_mcp_configs(args: &Args) -> anyhow::Result<Vec<McpServerConfig>> {
+    let mut configs = Vec::new();
+    if let Some(path) = args.mcp_config.as_ref() {
+        let raw = std::fs::read_to_string(path)?;
+        configs.extend(parse_mcp_json(&raw)?);
+    }
 
-    let raw = std::fs::read_to_string(path)?;
-    let mut configs = parse_mcp_json(&raw)?;
-    if enable_imported {
+    if args.discover_mcp {
+        let home = std::env::var("HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("."));
+        configs.extend(
+            discover_known_mcp_configs(&home)
+                .into_iter()
+                .map(|discovered| discovered.config),
+        );
+    }
+
+    configs = dedupe_configs(configs);
+    if args.enable_imported {
         for config in &mut configs {
             config.enabled = true;
         }
     }
     Ok(configs)
+}
+
+fn dedupe_configs(configs: Vec<McpServerConfig>) -> Vec<McpServerConfig> {
+    let mut seen = std::collections::BTreeSet::new();
+    configs
+        .into_iter()
+        .filter(|config| seen.insert(config.id.clone()))
+        .collect()
 }
 
 fn protected_route_index(args: &Args) -> anyhow::Result<Option<ProtectedRouteIndex>> {
@@ -117,7 +136,7 @@ mod tests {
     #[test]
     fn load_mcp_configs_keeps_imports_disabled_by_default() {
         let path = write_config();
-        let configs = load_mcp_configs(Some(&path), false).expect("configs");
+        let configs = load_mcp_configs(&args_with_config(path, false)).expect("configs");
 
         assert_eq!(configs.len(), 1);
         assert!(!configs[0].enabled);
@@ -126,7 +145,7 @@ mod tests {
     #[test]
     fn load_mcp_configs_can_enable_operator_supplied_imports() {
         let path = write_config();
-        let configs = load_mcp_configs(Some(&path), true).expect("configs");
+        let configs = load_mcp_configs(&args_with_config(path, true)).expect("configs");
 
         assert_eq!(configs.len(), 1);
         assert!(configs[0].enabled);
@@ -145,13 +164,13 @@ mod tests {
 
     #[test]
     fn empty_config_without_path_is_valid() {
-        let configs = load_mcp_configs(None, true).expect("configs");
+        let configs = load_mcp_configs(&args_without_config()).expect("configs");
         assert!(configs.is_empty());
     }
 
     #[test]
     fn server_config_shape_stays_in_protocol_models() {
-        let configs = load_mcp_configs(None, false).expect("configs");
+        let configs = load_mcp_configs(&args_without_config()).expect("configs");
         assert_eq!(configs, Vec::<McpServerConfig>::new());
 
         let _transport = McpTransportConfig::Stdio {
@@ -166,6 +185,7 @@ mod tests {
         let args = Args {
             listen: "127.0.0.1:8787".parse().expect("listen"),
             mcp_config: None,
+            discover_mcp: false,
             enable_imported: false,
             protected_mcp_host: Some("mcp.example.test".to_string()),
             protected_mcp_path: None,
@@ -183,6 +203,7 @@ mod tests {
         let args = Args {
             listen: "127.0.0.1:8787".parse().expect("listen"),
             mcp_config: None,
+            discover_mcp: false,
             enable_imported: false,
             protected_mcp_host: Some("mcp.example.test".to_string()),
             protected_mcp_path: Some("/syslog".to_string()),
@@ -196,5 +217,35 @@ mod tests {
             .expect("route index")
             .expect("protected routes");
         assert!(routes.resolve("mcp.example.test", "/syslog").is_some());
+    }
+
+    fn args_with_config(path: PathBuf, enable_imported: bool) -> Args {
+        Args {
+            listen: "127.0.0.1:8787".parse().expect("listen"),
+            mcp_config: Some(path),
+            discover_mcp: false,
+            enable_imported,
+            protected_mcp_host: None,
+            protected_mcp_path: None,
+            protected_mcp_server: None,
+            protected_mcp_resource: None,
+            protected_mcp_auth_servers: Vec::new(),
+            protected_mcp_scopes: "mcp:read".to_string(),
+        }
+    }
+
+    fn args_without_config() -> Args {
+        Args {
+            listen: "127.0.0.1:8787".parse().expect("listen"),
+            mcp_config: None,
+            discover_mcp: false,
+            enable_imported: false,
+            protected_mcp_host: None,
+            protected_mcp_path: None,
+            protected_mcp_server: None,
+            protected_mcp_resource: None,
+            protected_mcp_auth_servers: Vec::new(),
+            protected_mcp_scopes: "mcp:read".to_string(),
+        }
     }
 }

@@ -7,24 +7,69 @@ use std::collections::BTreeMap;
 mod tests;
 
 pub fn parse_mcp_json(raw: &str) -> Result<Vec<McpServerConfig>, ConfigError> {
+    parse_mcp_json_with_options(raw, false)
+}
+
+pub fn parse_mcp_json_with_options(
+    raw: &str,
+    allow_root_fallback: bool,
+) -> Result<Vec<McpServerConfig>, ConfigError> {
     let stripped = strip_jsonc_comments(raw);
     let value: Value = serde_json::from_str(&stripped)?;
     let object = value.as_object().cloned().unwrap_or_default();
-    let servers = object
-        .get("mcpServers")
-        .or_else(|| object.get("servers"))
-        .or_else(|| object.get("mcp"))
-        .and_then(Value::as_object)
-        .cloned()
-        .unwrap_or_default();
+    let servers = mcp_servers(&value, &object, allow_root_fallback);
 
     let mut imported = Vec::new();
     for (name, spec) in servers {
-        let server = parse_server(&name, &spec)?;
+        let server = parse_server(&name, spec)?;
         imported.push(server);
     }
     imported.sort_by(|left, right| left.name.cmp(&right.name));
     Ok(imported)
+}
+
+pub(crate) fn scrub_env_values(config: &mut McpServerConfig) {
+    if let McpTransportConfig::Stdio { env, .. } = &mut config.transport {
+        env.clear();
+    }
+}
+
+fn mcp_servers<'a>(
+    value: &'a Value,
+    object: &'a serde_json::Map<String, Value>,
+    allow_root_fallback: bool,
+) -> Vec<(String, &'a Value)> {
+    for key in ["mcpServers", "servers", "mcp"] {
+        if let Some(servers) = object.get(key).and_then(Value::as_object) {
+            return servers
+                .iter()
+                .map(|(name, spec)| (name.clone(), spec))
+                .collect();
+        }
+    }
+
+    if allow_root_fallback && root_looks_like_servers(value) {
+        return object
+            .iter()
+            .map(|(name, spec)| (name.clone(), spec))
+            .collect();
+    }
+
+    Vec::new()
+}
+
+fn root_looks_like_servers(value: &Value) -> bool {
+    value
+        .as_object()
+        .map(|object| {
+            object.values().any(|entry| {
+                entry
+                    .as_object()
+                    .map(|entry| entry.contains_key("command") || entry.contains_key("url"))
+                    .unwrap_or(false)
+            })
+        })
+        .unwrap_or(false)
 }
 
 fn parse_server(name: &str, spec: &Value) -> Result<McpServerConfig, ConfigError> {
@@ -41,18 +86,7 @@ fn parse_server(name: &str, spec: &Value) -> Result<McpServerConfig, ConfigError
         .unwrap_or_default();
     let env_keys = env.keys().cloned().collect::<Vec<_>>();
 
-    if let Some(command) = object.get("command").and_then(Value::as_str) {
-        let args = object
-            .get("args")
-            .and_then(Value::as_array)
-            .map(|values| {
-                values
-                    .iter()
-                    .filter_map(Value::as_str)
-                    .map(ToOwned::to_owned)
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
+    if let Some((command, args)) = command_and_args(&object) {
         return Ok(McpServerConfig {
             id: McpServerId::new(name),
             name: name.to_string(),
@@ -89,6 +123,39 @@ fn parse_server(name: &str, spec: &Value) -> Result<McpServerConfig, ConfigError
     Err(ConfigError::MissingTarget {
         name: name.to_string(),
     })
+}
+
+fn command_and_args(object: &serde_json::Map<String, Value>) -> Option<(String, Vec<String>)> {
+    match object.get("command") {
+        Some(Value::String(command)) => Some((command.clone(), array_strings(object.get("args")))),
+        Some(Value::Array(command)) => {
+            let first = command.first()?.as_str()?.to_string();
+            let args = if command.len() > 1 {
+                command[1..]
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .map(ToOwned::to_owned)
+                    .collect()
+            } else {
+                array_strings(object.get("args"))
+            };
+            Some((first, args))
+        }
+        _ => None,
+    }
+}
+
+fn array_strings(value: Option<&Value>) -> Vec<String> {
+    value
+        .and_then(Value::as_array)
+        .map(|values| {
+            values
+                .iter()
+                .filter_map(Value::as_str)
+                .map(ToOwned::to_owned)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn strip_jsonc_comments(raw: &str) -> String {
