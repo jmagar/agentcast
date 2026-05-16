@@ -26,6 +26,9 @@ use serde::Serialize;
 use serde_json::Value;
 use std::{collections::BTreeMap, net::SocketAddr, path::PathBuf, sync::Arc};
 
+mod config_cmd;
+use config_cmd::ConfigCommand;
+
 #[derive(Debug, Parser)]
 #[command(name = "agentcast", version, about = "AgentCast gateway server")]
 struct Args {
@@ -72,6 +75,10 @@ enum Command {
     Marketplace {
         #[command(subcommand)]
         command: MarketplaceCommand,
+    },
+    Config {
+        #[command(subcommand)]
+        command: ConfigCommand,
     },
 }
 
@@ -412,6 +419,7 @@ async fn run_command(command: Command) -> anyhow::Result<()> {
         Command::Gateway { command } => run_gateway_command(*command).await,
         Command::Registry { command } => run_registry_command(command).await,
         Command::Marketplace { command } => run_marketplace_command(command),
+        Command::Config { command } => config_cmd::run(command),
     }
 }
 
@@ -1425,6 +1433,40 @@ mod tests {
         };
         assert_eq!(config, PathBuf::from("agentcast.toml"));
         assert!(write);
+    }
+
+    #[test]
+    fn parses_config_set_and_env_subcommands() {
+        let args = Args::try_parse_from([
+            "agentcast",
+            "config",
+            "set",
+            "mcp.upstreams.fs.command",
+            "fs-mcp",
+        ])
+        .expect("parse");
+        let Some(Command::Config { command }) = args.command else {
+            panic!("config set command");
+        };
+        let config_cmd::ConfigCommand::Set { key, value, .. } = command else {
+            panic!("config set variant");
+        };
+        assert_eq!(key, "mcp.upstreams.fs.command");
+        assert_eq!(value, "fs-mcp");
+
+        let args = Args::try_parse_from(["agentcast", "config", "env", "set", "RUST_LOG", "info"])
+            .expect("parse");
+        let Some(Command::Config {
+            command:
+                config_cmd::ConfigCommand::Env {
+                    command: config_cmd::ConfigEnvCommand::Set { key, value, .. },
+                },
+        }) = args.command
+        else {
+            panic!("config env set command");
+        };
+        assert_eq!(key, "RUST_LOG");
+        assert_eq!(value, "info");
     }
 
     fn normalized_server_json() -> String {
