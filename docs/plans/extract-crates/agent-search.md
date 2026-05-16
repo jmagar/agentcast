@@ -41,9 +41,9 @@ review_basis: "cross-referenced against gateway-first implementation audit and l
 
 ## Current Implementation Audit
 
-As of 2026-05-15, `agent-search` is partially implemented for the gateway path with deterministic action documents, indexing, query matching, and ranked results used by the gateway API.
+As of 2026-05-15, `agent-search` is partially implemented for the gateway path with deterministic action documents, indexing, query matching, ranked results used by the gateway API, secret-like field redaction, bounded/truncated field normalization, schema-summary indexing, and stable result explanation metadata for matched terms and fields.
 
-Continue with redaction and truncation rules, schema summary handling, bounded result sets, and explanation metadata that remains stable for CLI/API/UI consumers.
+Continue only when additional ranking signals or UI/API consumers require broader query behavior.
 
 ## Lab Evidence Read
 

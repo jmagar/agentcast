@@ -2,6 +2,7 @@ use crate::{ActionRoute, GatewayCatalog, GatewayError, GatewayExposurePolicy, Ga
 use agent_auth::OAuthCredential;
 use agent_protocol::{LauncherActionKind, ToolInvocation, ToolInvocationResult};
 use agent_runtime::{McpRuntime, RuntimeCatalogSnapshot, RuntimeRequestAuth, ToolCallRequest};
+use std::collections::BTreeMap;
 
 #[cfg(test)]
 mod tests;
@@ -41,6 +42,11 @@ impl GatewayService {
 
     pub fn router(&self) -> &GatewayRouter {
         &self.router
+    }
+
+    pub fn health_from_snapshots(snapshots: &[RuntimeCatalogSnapshot]) -> GatewayHealthSummary {
+        let catalog = GatewayCatalog::from_snapshots(snapshots.to_vec());
+        GatewayHealthSummary::from_catalog_and_snapshots(&catalog, snapshots)
     }
 
     pub async fn invoke(
@@ -91,5 +97,37 @@ impl GatewayService {
             action_id: invocation.action_id,
             output: response.output,
         })
+    }
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct GatewayHealthSummary {
+    pub server_count: usize,
+    pub action_count: usize,
+    pub collision_count: usize,
+    pub status_counts: BTreeMap<String, usize>,
+}
+
+impl GatewayHealthSummary {
+    pub fn from_catalog_and_snapshots(
+        catalog: &GatewayCatalog,
+        snapshots: &[RuntimeCatalogSnapshot],
+    ) -> Self {
+        let mut status_counts = BTreeMap::new();
+        for snapshot in snapshots {
+            *status_counts
+                .entry(format!("{:?}", snapshot.status).to_ascii_lowercase())
+                .or_insert(0) += 1;
+        }
+        Self {
+            server_count: snapshots.len(),
+            action_count: catalog.actions.len(),
+            collision_count: catalog.collisions.len(),
+            status_counts,
+        }
+    }
+
+    pub fn status_count(&self, status: &str) -> usize {
+        self.status_counts.get(status).copied().unwrap_or(0)
     }
 }

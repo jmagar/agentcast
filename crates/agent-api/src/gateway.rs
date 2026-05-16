@@ -1,7 +1,7 @@
 use agent_gateway::{GatewayError, GatewayService};
 use agent_protocol::{LauncherActionId, McpServerConfig, McpServerId, ToolInvocation};
 use agent_runtime::{McpRuntime, RuntimeCatalogSnapshot, RuntimeError};
-use agent_search::{SearchIndex, SearchQuery};
+use agent_search::{SearchIndex, SearchMatchField, SearchMatchKind, SearchQuery};
 use serde::Serialize;
 use serde_json::Value;
 use std::sync::Arc;
@@ -31,9 +31,15 @@ impl GatewayApi {
 
     pub fn status(&self) -> GatewayApiStatus {
         let snapshots = self.runtime.snapshots();
+        let health = agent_gateway::GatewayHealthSummary::from_catalog_and_snapshots(
+            &self.gateway.catalog,
+            &snapshots,
+        );
         GatewayApiStatus {
-            server_count: snapshots.len(),
-            action_count: self.gateway.catalog.actions.len(),
+            server_count: health.server_count,
+            action_count: health.action_count,
+            collision_count: health.collision_count,
+            status_counts: health.status_counts,
         }
     }
 
@@ -66,6 +72,11 @@ impl GatewayApi {
                 action_id: result.action_id.to_string(),
                 name: result.name,
                 score: result.score,
+                match_kind: result.match_kind,
+                matched_fields: result.matched_fields,
+                matched_terms: result.matched_terms,
+                summary: result.summary,
+                truncated: result.truncated,
             })
             .collect()
     }
@@ -153,6 +164,8 @@ impl GatewayApi {
 pub struct GatewayApiStatus {
     pub server_count: usize,
     pub action_count: usize,
+    pub collision_count: usize,
+    pub status_counts: std::collections::BTreeMap<String, usize>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -177,6 +190,11 @@ pub struct GatewayApiSearchResult {
     pub action_id: String,
     pub name: String,
     pub score: u16,
+    pub match_kind: SearchMatchKind,
+    pub matched_fields: Vec<SearchMatchField>,
+    pub matched_terms: Vec<String>,
+    pub summary: Option<String>,
+    pub truncated: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]

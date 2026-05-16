@@ -12,6 +12,7 @@ mod tests;
 pub struct GatewayCatalog {
     pub actions: Vec<LauncherAction>,
     pub collisions: Vec<CollisionReport>,
+    search_documents: Vec<GatewaySearchDocument>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -19,6 +20,13 @@ pub struct CollisionReport {
     pub action_id: LauncherActionId,
     pub existing_display_name: String,
     pub rejected_display_name: String,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct GatewayCatalogDiff {
+    pub added: Vec<LauncherActionId>,
+    pub removed: Vec<LauncherActionId>,
+    pub changed: Vec<LauncherActionId>,
 }
 
 pub type GatewaySearchDocument = agent_search::SearchDocument;
@@ -34,6 +42,7 @@ impl GatewayCatalog {
     ) -> Self {
         let mut actions_by_id = BTreeMap::<LauncherActionId, LauncherAction>::new();
         let mut collisions = Vec::new();
+        let mut documents_by_id = BTreeMap::<LauncherActionId, GatewaySearchDocument>::new();
 
         for snapshot in snapshots {
             for tool in snapshot.tools {
@@ -59,30 +68,68 @@ impl GatewayCatalog {
                         rejected_display_name: display_name,
                     });
                 } else {
+                    documents_by_id.insert(
+                        action_id.clone(),
+                        GatewaySearchDocument {
+                            action_id: action_id.clone(),
+                            name: action.display_name.clone(),
+                            description: action.description.clone(),
+                            metadata: action_metadata(&action),
+                            schema_summary: agent_search::schema_summary(&tool.input_schema),
+                            catalog_hash: String::new(),
+                            truncated: false,
+                        },
+                    );
                     actions_by_id.insert(action_id, action);
                 }
             }
         }
 
-        Self {
+        let mut catalog = Self {
             actions: actions_by_id.into_values().collect(),
             collisions,
+            search_documents: documents_by_id.into_values().collect(),
+        };
+        let catalog_hash = catalog.catalog_hash();
+        for document in &mut catalog.search_documents {
+            document.catalog_hash = catalog_hash.clone();
         }
+        catalog
     }
 
     pub fn search_documents(&self) -> Vec<GatewaySearchDocument> {
-        let catalog_hash = self.catalog_hash();
-        self.actions
+        self.search_documents.clone()
+    }
+
+    pub fn diff(&self, next: &GatewayCatalog) -> GatewayCatalogDiff {
+        let current = self
+            .actions
             .iter()
-            .map(|action| GatewaySearchDocument {
-                action_id: action.id.clone(),
-                name: action.display_name.clone(),
-                description: action.description.clone(),
-                metadata: action_metadata(action),
-                catalog_hash: catalog_hash.clone(),
-                truncated: false,
-            })
-            .collect()
+            .map(|action| (action.id.clone(), action.clone()))
+            .collect::<BTreeMap<_, _>>();
+        let next_actions = next
+            .actions
+            .iter()
+            .map(|action| (action.id.clone(), action.clone()))
+            .collect::<BTreeMap<_, _>>();
+
+        GatewayCatalogDiff {
+            added: next_actions
+                .keys()
+                .filter(|id| !current.contains_key(*id))
+                .cloned()
+                .collect(),
+            removed: current
+                .keys()
+                .filter(|id| !next_actions.contains_key(*id))
+                .cloned()
+                .collect(),
+            changed: next_actions
+                .iter()
+                .filter(|(id, next)| current.get(id).is_some_and(|current| current != *next))
+                .map(|(id, _next)| id.clone())
+                .collect(),
+        }
     }
 
     pub fn catalog_hash(&self) -> String {

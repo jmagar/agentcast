@@ -48,9 +48,9 @@ Gateway is required for the MCP launcher MVP after config and MCP lifecycle are 
 
 ## Current Implementation Audit
 
-As of 2026-05-15, `agent-gateway` is partially implemented: it projects runtime catalogs into gateway actions, applies exposure allow/deny policy before listing/search/routing, routes calls/reads/prompts, exports search documents, owns protected route config/index/validation/CRUD/status/test policy, and orchestrates upstream OAuth state, metadata discovery, dynamic client registration, authorization-code and refresh-token endpoint exchange, refresh state transitions, refresh-failed status, removed-upstream OAuth reconciliation, and runtime credential injection with the auth/store/runtime/API layers.
+As of 2026-05-15, `agent-gateway` is partially implemented: it projects runtime catalogs into gateway actions, applies exposure allow/deny policy before listing/search/routing, routes calls/reads/prompts, exports search documents, reports catalog diff metadata for reloads, aggregates gateway health over runtime statuses and catalog counts, owns protected route config/index/validation/CRUD/status/test policy, and orchestrates upstream OAuth state, metadata discovery, dynamic client registration, authorization-code and refresh-token endpoint exchange, refresh state transitions, refresh-failed status, removed-upstream OAuth reconciliation, and runtime credential injection with the auth/store/runtime/API layers.
 
-Continue with catalog diff/reload behavior and broader health aggregation. Do not collapse these responsibilities back into a Lab-style singleton manager.
+Continue with reload orchestration only when runtime/config surfaces need live replacement behavior. Do not collapse these responsibilities back into a Lab-style singleton manager.
 
 ## Lab Source Files
 

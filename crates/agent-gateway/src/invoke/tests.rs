@@ -4,6 +4,7 @@ use agent_protocol::{
     LauncherActionId, McpServerConfig, McpServerId, McpToolId, McpTransportConfig,
 };
 use agent_runtime::McpRuntime;
+use agent_runtime::{RuntimeCatalogSnapshot, RuntimeTool};
 use serde_json::json;
 use std::collections::BTreeMap;
 
@@ -120,4 +121,50 @@ async fn exposure_policy_blocks_direct_invocation_of_hidden_action() {
         error,
         GatewayError::UnknownAction("mcp:fixture:echo".to_string())
     );
+}
+
+#[test]
+fn health_summary_aggregates_runtime_status_and_catalog_counts() {
+    let snapshots = vec![
+        runtime_snapshot(
+            "healthy",
+            agent_protocol::ServerStatus::Healthy,
+            vec!["echo"],
+        ),
+        runtime_snapshot("failed", agent_protocol::ServerStatus::Failed, Vec::new()),
+    ];
+
+    let summary = GatewayService::health_from_snapshots(&snapshots);
+
+    assert_eq!(summary.server_count, 2);
+    assert_eq!(summary.action_count, 1);
+    assert_eq!(summary.status_count("healthy"), 1);
+    assert_eq!(summary.status_count("failed"), 1);
+}
+
+fn runtime_snapshot(
+    server_id: &str,
+    status: agent_protocol::ServerStatus,
+    tools: Vec<&str>,
+) -> RuntimeCatalogSnapshot {
+    RuntimeCatalogSnapshot {
+        server_id: McpServerId::new(server_id),
+        server_name: server_id.to_string(),
+        status,
+        tools: tools
+            .into_iter()
+            .map(|tool| RuntimeTool {
+                id: McpToolId::new(tool),
+                name: tool.to_string(),
+                title: None,
+                description: None,
+                input_schema: json!({}),
+                output_schema: None,
+                annotations: None,
+            })
+            .collect(),
+        resources: Vec::new(),
+        resource_templates: Vec::new(),
+        prompts: Vec::new(),
+    }
 }

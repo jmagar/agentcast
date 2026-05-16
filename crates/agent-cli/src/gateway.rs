@@ -32,6 +32,13 @@ impl GatewayCliView {
                 name: result.name.clone(),
                 score: result.score,
                 match_kind: format!("{:?}", result.match_kind),
+                matched_fields: result
+                    .matched_fields
+                    .iter()
+                    .map(|field| format!("{field:?}"))
+                    .collect(),
+                matched_terms: result.matched_terms.clone(),
+                summary: result.summary.clone(),
                 truncated: result.truncated,
             })
             .collect()
@@ -74,14 +81,15 @@ impl GatewayCliView {
 
     pub fn render_search_table(rows: &[GatewaySearchRow]) -> String {
         render_table(
-            &["ACTION ID", "NAME", "SCORE", "MATCH", "TRUNCATED"],
+            &["ACTION ID", "NAME", "SCORE", "MATCH", "FIELDS", "SUMMARY"],
             rows.iter().map(|row| {
                 [
                     row.action_id.clone(),
                     row.name.clone(),
                     row.score.to_string(),
                     row.match_kind.clone(),
-                    row.truncated.to_string(),
+                    row.matched_fields.join(","),
+                    row.summary.clone().unwrap_or_default(),
                 ]
             }),
         )
@@ -188,6 +196,9 @@ pub struct GatewaySearchRow {
     pub name: String,
     pub score: u16,
     pub match_kind: String,
+    pub matched_fields: Vec<String>,
+    pub matched_terms: Vec<String>,
+    pub summary: Option<String>,
     pub truncated: bool,
 }
 

@@ -6,10 +6,10 @@ pub mod oauth;
 pub mod protected_routes;
 pub mod router;
 
-pub use catalog::{CollisionReport, GatewayCatalog, GatewaySearchDocument};
+pub use catalog::{CollisionReport, GatewayCatalog, GatewayCatalogDiff, GatewaySearchDocument};
 pub use error::GatewayError;
 pub use exposure::GatewayExposurePolicy;
-pub use invoke::GatewayService;
+pub use invoke::{GatewayHealthSummary, GatewayService};
 pub use oauth::{
     BeginAuthorization, BeginAuthorizationResult, GatewayOAuthError, GatewayOAuthService,
     HttpOAuthTokenClient, OAuthAuthorizationCodeEndpoint, OAuthDynamicClientRegistrationEndpoint,

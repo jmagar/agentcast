@@ -85,7 +85,13 @@ fn catalog_exports_search_documents_without_ranking() {
             "status",
             Some("Git status"),
             Some("Inspect working tree"),
-            json!({"type": "object"}),
+            json!({
+                "type": "object",
+                "properties": {
+                    "path": { "type": "string" }
+                },
+                "required": ["path"]
+            }),
         )],
     )]);
 
@@ -96,6 +102,10 @@ fn catalog_exports_search_documents_without_ranking() {
     assert_eq!(docs[0].name, "Git status");
     assert_eq!(docs[0].description.as_deref(), Some("Inspect working tree"));
     assert!(docs[0].metadata.contains(&"git".to_string()));
+    assert_eq!(
+        docs[0].schema_summary.as_deref(),
+        Some("fields: path; required: path")
+    );
     assert!(!docs[0].catalog_hash.is_empty());
 }
 
@@ -134,4 +144,57 @@ fn exposure_policy_filters_actions_before_search_and_routing() {
         ["mcp:git:status"]
     );
     assert_eq!(catalog.search_documents().len(), 1);
+}
+
+#[test]
+fn catalog_diff_reports_added_removed_and_changed_actions() {
+    let previous = GatewayCatalog::from_snapshots(vec![snapshot(
+        "git",
+        "Git",
+        vec![
+            tool(
+                "status",
+                "status",
+                Some("Git status"),
+                Some("Old"),
+                json!({}),
+            ),
+            tool("push", "push", Some("Git push"), None, json!({})),
+        ],
+    )]);
+    let next = GatewayCatalog::from_snapshots(vec![snapshot(
+        "git",
+        "Git",
+        vec![
+            tool(
+                "status",
+                "status",
+                Some("Git status"),
+                Some("New"),
+                json!({}),
+            ),
+            tool("pull", "pull", Some("Git pull"), None, json!({})),
+        ],
+    )]);
+
+    let diff = previous.diff(&next);
+
+    assert_eq!(
+        diff.added.iter().map(|id| id.as_str()).collect::<Vec<_>>(),
+        vec!["mcp:git:pull"]
+    );
+    assert_eq!(
+        diff.removed
+            .iter()
+            .map(|id| id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["mcp:git:push"]
+    );
+    assert_eq!(
+        diff.changed
+            .iter()
+            .map(|id| id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["mcp:git:status"]
+    );
 }

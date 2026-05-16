@@ -76,6 +76,9 @@ fn renders_human_action_and_search_tables() {
         name: "Echo".to_string(),
         score: 100,
         match_kind: "Name".to_string(),
+        matched_fields: vec!["Name".to_string()],
+        matched_terms: vec!["echo".to_string()],
+        summary: Some("Repeat text".to_string()),
         truncated: false,
     }];
 
@@ -86,6 +89,7 @@ fn renders_human_action_and_search_tables() {
     assert!(action_table.contains("mcp:fixture:echo"));
     assert!(search_table.contains("SCORE"));
     assert!(search_table.contains("100"));
+    assert!(search_table.contains("Repeat text"));
 }
 
 #[test]
