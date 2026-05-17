@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fs, path::Path};
+use std::{fs, path::Path};
 
 use crate::{ConfigError, ConfigResult};
 
@@ -11,17 +11,39 @@ pub struct EnvWriteResult {
     pub backup_written: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum EnvLine {
+    Verbatim(String),
+    Entry { key: String, value: String },
+}
+
 pub fn set_env_value(path: &Path, key: &str, value: &str) -> ConfigResult<EnvWriteResult> {
     validate_env_key(key)?;
-    let existing = if path.exists() {
-        fs::read_to_string(path)?
-    } else {
-        String::new()
-    };
-    let mut parsed = parse_env_lines(&existing);
-    let previous = parsed.insert(key.to_string(), value.to_string());
+    let (existing, mut lines) = read_lines(path)?;
 
-    if previous.as_deref() == Some(value) {
+    let mut previous = None;
+    let mut updated = false;
+    for line in &mut lines {
+        if let EnvLine::Entry { key: k, value: v } = line
+            && k == key
+        {
+            previous = Some(v.clone());
+            if v != value {
+                *v = value.to_string();
+                updated = true;
+            }
+            break;
+        }
+    }
+    if previous.is_none() {
+        lines.push(EnvLine::Entry {
+            key: key.to_string(),
+            value: value.to_string(),
+        });
+        updated = true;
+    }
+
+    if !updated {
         return Ok(EnvWriteResult {
             previous,
             backup_written: false,
@@ -36,7 +58,7 @@ pub fn set_env_value(path: &Path, key: &str, value: &str) -> ConfigResult<EnvWri
         false
     };
 
-    write_env(path, &parsed)?;
+    atomic_write(path, &render_lines(&lines))?;
     Ok(EnvWriteResult {
         previous,
         backup_written,
@@ -48,12 +70,18 @@ pub fn unset_env_value(path: &Path, key: &str) -> ConfigResult<Option<String>> {
     if !path.exists() {
         return Ok(None);
     }
-    let existing = fs::read_to_string(path)?;
-    let mut parsed = parse_env_lines(&existing);
-    let removed = parsed.remove(key);
+    let (existing, mut lines) = read_lines(path)?;
+    let mut removed = None;
+    lines.retain(|line| match line {
+        EnvLine::Entry { key: k, value } if k == key => {
+            removed = Some(value.clone());
+            false
+        }
+        _ => true,
+    });
     if removed.is_some() {
         fs::write(path.with_extension("env.bak"), &existing)?;
-        write_env(path, &parsed)?;
+        atomic_write(path, &render_lines(&lines))?;
     }
     Ok(removed)
 }
@@ -63,16 +91,25 @@ pub fn get_env_value(path: &Path, key: &str) -> ConfigResult<Option<String>> {
     if !path.exists() {
         return Ok(None);
     }
-    let raw = fs::read_to_string(path)?;
-    Ok(parse_env_lines(&raw).remove(key))
+    let (_, lines) = read_lines(path)?;
+    Ok(lines.into_iter().find_map(|line| match line {
+        EnvLine::Entry { key: k, value } if k == key => Some(value),
+        _ => None,
+    }))
 }
 
 pub fn list_env_keys(path: &Path) -> ConfigResult<Vec<String>> {
     if !path.exists() {
         return Ok(Vec::new());
     }
-    let raw = fs::read_to_string(path)?;
-    Ok(parse_env_lines(&raw).into_keys().collect())
+    let (_, lines) = read_lines(path)?;
+    Ok(lines
+        .into_iter()
+        .filter_map(|line| match line {
+            EnvLine::Entry { key, .. } => Some(key),
+            _ => None,
+        })
+        .collect())
 }
 
 fn validate_env_key(key: &str) -> ConfigResult<()> {
@@ -90,29 +127,67 @@ fn validate_env_key(key: &str) -> ConfigResult<()> {
     }
 }
 
-fn parse_env_lines(raw: &str) -> BTreeMap<String, String> {
+fn read_lines(path: &Path) -> ConfigResult<(String, Vec<EnvLine>)> {
+    let raw = if path.exists() {
+        fs::read_to_string(path)?
+    } else {
+        String::new()
+    };
+    let lines = parse_env_lines(&raw);
+    Ok((raw, lines))
+}
+
+fn parse_env_lines(raw: &str) -> Vec<EnvLine> {
     raw.lines()
-        .filter_map(|line| {
+        .map(|line| {
             let trimmed = line.trim();
             if trimmed.is_empty() || trimmed.starts_with('#') {
-                return None;
+                return EnvLine::Verbatim(line.to_string());
             }
-            let (key, value) = trimmed.split_once('=')?;
-            Some((key.trim().to_string(), unquote_env_value(value.trim())))
+            match trimmed.split_once('=') {
+                Some((key, value)) => EnvLine::Entry {
+                    key: key.trim().to_string(),
+                    value: unquote_env_value(value.trim()),
+                },
+                None => EnvLine::Verbatim(line.to_string()),
+            }
         })
         .collect()
 }
 
-fn write_env(path: &Path, entries: &BTreeMap<String, String>) -> ConfigResult<()> {
-    let mut rendered = String::new();
-    for (key, value) in entries {
-        rendered.push_str(key);
-        rendered.push('=');
-        rendered.push_str(&quote_env_value(value));
-        rendered.push('\n');
+fn render_lines(lines: &[EnvLine]) -> String {
+    let mut out = String::new();
+    for line in lines {
+        match line {
+            EnvLine::Verbatim(s) => out.push_str(s),
+            EnvLine::Entry { key, value } => {
+                out.push_str(key);
+                out.push('=');
+                out.push_str(&quote_env_value(value));
+            }
+        }
+        out.push('\n');
     }
-    fs::write(path, rendered)?;
-    set_owner_only_permissions(path)?;
+    out
+}
+
+fn atomic_write(path: &Path, content: &str) -> ConfigResult<()> {
+    let file_name = path.file_name().ok_or_else(|| {
+        ConfigError::InvalidConfig(format!(
+            "env file path has no file name component: {}",
+            path.display()
+        ))
+    })?;
+    let mut tmp_name = file_name.to_os_string();
+    tmp_name.push(".tmp");
+    let tmp_path = path.with_file_name(tmp_name);
+
+    fs::write(&tmp_path, content)?;
+    set_owner_only_permissions(&tmp_path)?;
+    if let Err(error) = fs::rename(&tmp_path, path) {
+        let _ = fs::remove_file(&tmp_path);
+        return Err(ConfigError::Io(error));
+    }
     Ok(())
 }
 

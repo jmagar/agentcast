@@ -159,11 +159,13 @@ pub fn env_list(path: &Path) -> ConfigResult<EnvListRecord> {
     })
 }
 
-pub fn default_paths() -> AgentPaths {
-    let home = std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("."));
-    AgentPaths::from_home(&home)
+pub fn default_paths() -> ConfigResult<AgentPaths> {
+    let home = std::env::var_os("HOME").ok_or_else(|| {
+        ConfigError::InvalidConfig(
+            "HOME is not set; pass --config / --env-file explicitly to choose paths".into(),
+        )
+    })?;
+    Ok(AgentPaths::from_home(&PathBuf::from(home)))
 }
 
 fn load_or_empty_toml(path: &Path) -> ConfigResult<TomlValue> {

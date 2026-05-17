@@ -72,6 +72,18 @@ fn set_value_parses_json_typed_inputs() {
 }
 
 #[test]
+fn set_value_rejects_unsigned_integer_above_i64_max() {
+    let mut root = fixture();
+    let err = set_value(
+        &mut root,
+        "mcp.upstreams.git.command",
+        "18446744073709551615",
+    )
+    .unwrap_err();
+    assert_eq!(err.kind(), "invalid_config");
+}
+
+#[test]
 fn set_value_rejects_null() {
     let mut root = fixture();
     let err = set_value(&mut root, "mcp.upstreams.git.command", "null").unwrap_err();

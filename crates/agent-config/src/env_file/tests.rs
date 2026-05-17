@@ -74,11 +74,35 @@ fn unset_env_value_is_noop_for_missing_key() {
 }
 
 #[test]
-fn list_env_keys_returns_sorted_keys() {
+fn list_env_keys_returns_file_order() {
     let path = temp_path("list");
     std::fs::write(&path, "ZED=1\nALPHA=2\nMID=3\n").unwrap();
     let keys = list_env_keys(&path).expect("list");
-    assert_eq!(keys, vec!["ALPHA", "MID", "ZED"]);
+    assert_eq!(keys, vec!["ZED", "ALPHA", "MID"]);
+}
+
+#[test]
+fn set_env_value_preserves_comments_and_order() {
+    let path = temp_path("preserve");
+    std::fs::write(&path, "# top comment\nALPHA=1\n\n# section\nBETA=2\n").unwrap();
+
+    set_env_value(&path, "BETA", "3").expect("update");
+    set_env_value(&path, "GAMMA", "4").expect("append");
+
+    let contents = std::fs::read_to_string(&path).unwrap();
+    assert_eq!(
+        contents,
+        "# top comment\nALPHA=1\n\n# section\nBETA=3\nGAMMA=4\n"
+    );
+}
+
+#[test]
+fn unset_env_value_preserves_surrounding_comments() {
+    let path = temp_path("unset-preserve");
+    std::fs::write(&path, "# keep me\nALPHA=1\nBETA=2\n").unwrap();
+    unset_env_value(&path, "ALPHA").expect("unset");
+    let contents = std::fs::read_to_string(&path).unwrap();
+    assert_eq!(contents, "# keep me\nBETA=2\n");
 }
 
 #[test]

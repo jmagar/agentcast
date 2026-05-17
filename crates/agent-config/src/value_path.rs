@@ -64,6 +64,10 @@ fn json_to_toml(value: JsonValue) -> ConfigResult<TomlValue> {
         JsonValue::Number(n) => {
             if let Some(i) = n.as_i64() {
                 TomlValue::Integer(i)
+            } else if let Some(u) = n.as_u64() {
+                return Err(ConfigError::InvalidConfig(format!(
+                    "unsigned integer `{u}` exceeds TOML's signed integer range (i64::MAX)"
+                )));
             } else if let Some(f) = n.as_f64() {
                 TomlValue::Float(f)
             } else {

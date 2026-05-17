@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use agent_config::{
-    AgentPaths, config_get, config_list, config_paths, config_set, config_unset, config_validate,
+    ConfigResult, config_get, config_list, config_paths, config_set, config_unset, config_validate,
     default_paths, env_get, env_list, env_set, env_unset,
 };
 use clap::Subcommand;
@@ -70,41 +70,40 @@ pub enum ConfigEnvCommand {
 }
 
 pub fn run(command: ConfigCommand) -> anyhow::Result<()> {
-    let paths = default_paths();
     match command {
         ConfigCommand::Get { config, key } => {
-            let path = config.unwrap_or(paths.config_file);
+            let path = resolve_config(config)?;
             print_json(&config_get(&path, &key)?)
         }
         ConfigCommand::Set { config, key, value } => {
-            let path = config.unwrap_or(paths.config_file);
+            let path = resolve_config(config)?;
             print_json(&config_set(&path, &key, &value)?)
         }
         ConfigCommand::Unset { config, key } => {
-            let path = config.unwrap_or(paths.config_file);
+            let path = resolve_config(config)?;
             print_json(&config_unset(&path, &key)?)
         }
         ConfigCommand::List { config } => {
-            let path = config.unwrap_or(paths.config_file);
+            let path = resolve_config(config)?;
             print_json(&config_list(&path)?)
         }
         ConfigCommand::Validate { config } => {
-            let path = config.unwrap_or(paths.config_file);
+            let path = resolve_config(config)?;
             print_json(&config_validate(&path)?)
         }
         ConfigCommand::Path { config, env_file } => {
-            let config = config.unwrap_or(paths.config_file);
-            let env_file = env_file.unwrap_or(paths.env_file);
+            let config = resolve_config(config)?;
+            let env_file = resolve_env(env_file)?;
             print_json(&config_paths(&config, &env_file))
         }
-        ConfigCommand::Env { command } => run_env(command, paths),
+        ConfigCommand::Env { command } => run_env(command),
     }
 }
 
-fn run_env(command: ConfigEnvCommand, paths: AgentPaths) -> anyhow::Result<()> {
+fn run_env(command: ConfigEnvCommand) -> anyhow::Result<()> {
     match command {
         ConfigEnvCommand::Get { env_file, key } => {
-            let path = env_file.unwrap_or(paths.env_file);
+            let path = resolve_env(env_file)?;
             print_json(&env_get(&path, &key)?)
         }
         ConfigEnvCommand::Set {
@@ -112,17 +111,31 @@ fn run_env(command: ConfigEnvCommand, paths: AgentPaths) -> anyhow::Result<()> {
             key,
             value,
         } => {
-            let path = env_file.unwrap_or(paths.env_file);
+            let path = resolve_env(env_file)?;
             print_json(&env_set(&path, &key, &value)?)
         }
         ConfigEnvCommand::Unset { env_file, key } => {
-            let path = env_file.unwrap_or(paths.env_file);
+            let path = resolve_env(env_file)?;
             print_json(&env_unset(&path, &key)?)
         }
         ConfigEnvCommand::List { env_file } => {
-            let path = env_file.unwrap_or(paths.env_file);
+            let path = resolve_env(env_file)?;
             print_json(&env_list(&path)?)
         }
+    }
+}
+
+fn resolve_config(flag: Option<PathBuf>) -> ConfigResult<PathBuf> {
+    match flag {
+        Some(path) => Ok(path),
+        None => Ok(default_paths()?.config_file),
+    }
+}
+
+fn resolve_env(flag: Option<PathBuf>) -> ConfigResult<PathBuf> {
+    match flag {
+        Some(path) => Ok(path),
+        None => Ok(default_paths()?.env_file),
     }
 }
 
