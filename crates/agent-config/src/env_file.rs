@@ -13,7 +13,11 @@ pub struct EnvWriteResult {
 
 pub fn set_env_value(path: &Path, key: &str, value: &str) -> ConfigResult<EnvWriteResult> {
     validate_env_key(key)?;
-    let existing = fs::read_to_string(path).unwrap_or_default();
+    let existing = if path.exists() {
+        fs::read_to_string(path)?
+    } else {
+        String::new()
+    };
     let mut parsed = parse_env_lines(&existing);
     let previous = parsed.insert(key.to_string(), value.to_string());
 
@@ -124,18 +128,49 @@ fn quote_env_value(value: &str) -> String {
         .chars()
         .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.' | '/' | ':'))
     {
-        value.to_string()
-    } else {
-        format!("{value:?}")
+        return value.to_string();
     }
+    let mut quoted = String::with_capacity(value.len() + 2);
+    quoted.push('"');
+    for ch in value.chars() {
+        match ch {
+            '\\' => quoted.push_str("\\\\"),
+            '"' => quoted.push_str("\\\""),
+            '\n' => quoted.push_str("\\n"),
+            '\r' => quoted.push_str("\\r"),
+            '\t' => quoted.push_str("\\t"),
+            other => quoted.push(other),
+        }
+    }
+    quoted.push('"');
+    quoted
 }
 
 fn unquote_env_value(value: &str) -> String {
-    value
+    let Some(inner) = value
         .strip_prefix('"')
         .and_then(|value| value.strip_suffix('"'))
-        .unwrap_or(value)
-        .to_string()
+    else {
+        return value.to_string();
+    };
+    let mut out = String::with_capacity(inner.len());
+    let mut chars = inner.chars();
+    while let Some(ch) = chars.next() {
+        if ch != '\\' {
+            out.push(ch);
+            continue;
+        }
+        match chars.next() {
+            Some('\\') => out.push('\\'),
+            Some('"') => out.push('"'),
+            Some('n') => out.push('\n'),
+            Some('r') => out.push('\r'),
+            Some('t') => out.push('\t'),
+            Some(other) => out.push(other),
+            None => out.push('\\'),
+        }
+    }
+    out
 }
 
 #[cfg(unix)]

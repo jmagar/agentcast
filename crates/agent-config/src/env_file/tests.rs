@@ -98,3 +98,36 @@ fn quoting_round_trips_values_with_special_characters() {
         Some("hello world".into())
     );
 }
+
+#[test]
+fn quoting_round_trips_quotes_backslashes_and_newlines() {
+    let path = temp_path("escapes");
+    let value = "say \"hi\" \\ then\nnext line\twith tab";
+    set_env_value(&path, "MESSAGE", value).expect("set");
+    assert_eq!(
+        get_env_value(&path, "MESSAGE").unwrap().as_deref(),
+        Some(value),
+    );
+
+    set_env_value(&path, "MESSAGE", value).expect("idempotent rewrite");
+    assert_eq!(
+        get_env_value(&path, "MESSAGE").unwrap().as_deref(),
+        Some(value),
+    );
+}
+
+#[test]
+fn set_env_value_propagates_read_errors_on_existing_path() {
+    let dir = std::env::temp_dir().join(format!(
+        "agentcast-env-dir-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(&dir).unwrap();
+    let err = set_env_value(&dir, "RUST_LOG", "info").unwrap_err();
+    assert_eq!(err.kind(), "io_error");
+    std::fs::remove_dir_all(&dir).ok();
+}
