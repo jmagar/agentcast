@@ -21,21 +21,36 @@ pub fn set_env_value(path: &Path, key: &str, value: &str) -> ConfigResult<EnvWri
     validate_env_key(key)?;
     let (existing, mut lines) = read_lines(path)?;
 
+    let indices: Vec<usize> = lines
+        .iter()
+        .enumerate()
+        .filter_map(|(i, line)| match line {
+            EnvLine::Entry { key: k, .. } if k == key => Some(i),
+            _ => None,
+        })
+        .collect();
+
     let mut previous = None;
     let mut updated = false;
-    for line in &mut lines {
-        if let EnvLine::Entry { key: k, value: v } = line
-            && k == key
-        {
+
+    if let Some(&last_idx) = indices.last() {
+        if let EnvLine::Entry { value: v, .. } = &lines[last_idx] {
             previous = Some(v.clone());
-            if v != value {
-                *v = value.to_string();
-                updated = true;
-            }
-            break;
         }
-    }
-    if previous.is_none() {
+        let first_idx = indices[0];
+        if let EnvLine::Entry { value: v, .. } = &mut lines[first_idx]
+            && v != value
+        {
+            *v = value.to_string();
+            updated = true;
+        }
+        if indices.len() > 1 {
+            for &idx in indices.iter().skip(1).rev() {
+                lines.remove(idx);
+            }
+            updated = true;
+        }
+    } else {
         lines.push(EnvLine::Entry {
             key: key.to_string(),
             value: value.to_string(),
@@ -92,7 +107,7 @@ pub fn get_env_value(path: &Path, key: &str) -> ConfigResult<Option<String>> {
         return Ok(None);
     }
     let (_, lines) = read_lines(path)?;
-    Ok(lines.into_iter().find_map(|line| match line {
+    Ok(lines.into_iter().rev().find_map(|line| match line {
         EnvLine::Entry { key: k, value } if k == key => Some(value),
         _ => None,
     }))
@@ -103,10 +118,11 @@ pub fn list_env_keys(path: &Path) -> ConfigResult<Vec<String>> {
         return Ok(Vec::new());
     }
     let (_, lines) = read_lines(path)?;
+    let mut seen = std::collections::HashSet::new();
     Ok(lines
         .into_iter()
         .filter_map(|line| match line {
-            EnvLine::Entry { key, .. } => Some(key),
+            EnvLine::Entry { key, .. } if seen.insert(key.clone()) => Some(key),
             _ => None,
         })
         .collect())

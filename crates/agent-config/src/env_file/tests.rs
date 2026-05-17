@@ -141,6 +141,45 @@ fn quoting_round_trips_quotes_backslashes_and_newlines() {
 }
 
 #[test]
+fn get_env_value_returns_last_duplicate() {
+    let path = temp_path("dup-get");
+    std::fs::write(&path, "ALPHA=first\nBETA=2\nALPHA=second\n").unwrap();
+    assert_eq!(
+        get_env_value(&path, "ALPHA").unwrap(),
+        Some("second".into())
+    );
+}
+
+#[test]
+fn set_env_value_collapses_duplicates_into_first_position() {
+    let path = temp_path("dup-set");
+    std::fs::write(&path, "ALPHA=first\nBETA=2\nALPHA=second\n").unwrap();
+
+    let result = set_env_value(&path, "ALPHA", "third").expect("set");
+    assert_eq!(result.previous.as_deref(), Some("second"));
+
+    let contents = std::fs::read_to_string(&path).unwrap();
+    assert_eq!(contents, "ALPHA=third\nBETA=2\n");
+}
+
+#[test]
+fn unset_env_value_removes_every_duplicate() {
+    let path = temp_path("dup-unset");
+    std::fs::write(&path, "ALPHA=1\nBETA=2\nALPHA=3\n").unwrap();
+    unset_env_value(&path, "ALPHA").expect("unset");
+    let contents = std::fs::read_to_string(&path).unwrap();
+    assert_eq!(contents, "BETA=2\n");
+}
+
+#[test]
+fn list_env_keys_deduplicates_in_first_occurrence_order() {
+    let path = temp_path("dup-list");
+    std::fs::write(&path, "ALPHA=1\nBETA=2\nALPHA=3\n").unwrap();
+    let keys = list_env_keys(&path).expect("list");
+    assert_eq!(keys, vec!["ALPHA", "BETA"]);
+}
+
+#[test]
 fn set_env_value_propagates_read_errors_on_existing_path() {
     let dir = std::env::temp_dir().join(format!(
         "agentcast-env-dir-{}-{}",
