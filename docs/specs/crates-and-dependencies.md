@@ -88,6 +88,11 @@ tooling:     xtask
 
 Layer checks should flag dependency edges that invert ownership. The current implementation starts with targeted deny-list checks before adding a complete dependency graph policy.
 
+The only current surface-to-adapter exception is `agent-server` -> `agent-mcp`
+for the temporary v0 stdio gateway composition path. The audit must encode that
+exception explicitly and continue to reject broad surface crate dependencies on
+protocol adapters.
+
 ## Output Format
 
 Human output should include:

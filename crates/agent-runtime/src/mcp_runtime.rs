@@ -8,6 +8,7 @@ use futures::StreamExt;
 use serde_json::Value;
 use std::{
     collections::BTreeMap,
+    sync::Arc,
     sync::atomic::{AtomicBool, AtomicU32, Ordering},
     time::{Duration, Instant},
 };
@@ -54,7 +55,7 @@ struct RuntimeUpstreamInit {
 
 #[derive(Debug)]
 struct ProtectedHttpClient {
-    client: McpClient,
+    client: Arc<McpClient>,
     lifecycle_token: CancellationToken,
     created_at: Instant,
 }
@@ -350,6 +351,7 @@ async fn call_tool_with_client(
         let cache_key = protected_http_cache_key(&url, &bearer_token);
         let mut clients = upstream.protected_http_clients.lock().await;
         let client = protected_http_client(&mut clients, cache_key, url, bearer_token).await?;
+        drop(clients);
         return client
             .call_tool(request.tool_id.as_str(), request.arguments)
             .await;
@@ -370,6 +372,7 @@ async fn read_resource_with_client(
         let cache_key = protected_http_cache_key(&url, &bearer_token);
         let mut clients = upstream.protected_http_clients.lock().await;
         let client = protected_http_client(&mut clients, cache_key, url, bearer_token).await?;
+        drop(clients);
         return client.read_resource(uri).await;
     }
 
@@ -387,6 +390,7 @@ async fn get_prompt_with_client(
         let cache_key = protected_http_cache_key(&url, &bearer_token);
         let mut clients = upstream.protected_http_clients.lock().await;
         let client = protected_http_client(&mut clients, cache_key, url, bearer_token).await?;
+        drop(clients);
         return client.get_prompt(name, arguments).await;
     }
 
@@ -398,7 +402,7 @@ async fn protected_http_client(
     cache_key: String,
     url: String,
     bearer_token: String,
-) -> Result<&McpClient, agent_mcp::McpError> {
+) -> Result<Arc<McpClient>, agent_mcp::McpError> {
     let expired = clients
         .get(&cache_key)
         .is_some_and(|client| client.created_at.elapsed() >= PROTECTED_HTTP_CLIENT_TTL);
@@ -419,17 +423,18 @@ async fn protected_http_client(
         clients.insert(
             cache_key.clone(),
             ProtectedHttpClient {
-                client,
+                client: Arc::new(client),
                 lifecycle_token,
                 created_at: Instant::now(),
             },
         );
     }
 
-    Ok(&clients
+    Ok(clients
         .get(&cache_key)
         .expect("protected HTTP client inserted")
-        .client)
+        .client
+        .clone())
 }
 
 fn protected_http_cache_key(url: &str, bearer_token: &str) -> String {

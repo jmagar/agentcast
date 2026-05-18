@@ -64,6 +64,10 @@ cargo xtask doctor
 Doctor also runs cargo metadata and a small `xtask` compile smoke test. If the
 active cargo/rustc path is routed through a broken wrapper, Snap-backed rustc, or
 failing `RUSTC_WRAPPER`/`sccache`, doctor should report that before longer gates.
+On this host, Cargo is configured to use the user-level `sccache` service socket
+at `/tmp/sccache-jmagar.sock`; if manual diagnostics show an empty or separate
+cache, export `SCCACHE_SERVER_UDS=/tmp/sccache-jmagar.sock` before running
+`sccache --show-stats`.
 For local debugging only, clearing the wrapper for one command can isolate the
 problem:
 

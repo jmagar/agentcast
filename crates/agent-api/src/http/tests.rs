@@ -60,6 +60,8 @@ async fn gateway_router_lists_searches_calls_and_reads() {
     )
     .await;
     assert_eq!(search[0]["action_id"], "mcp:fixture:echo");
+    assert_eq!(limit_items(vec![1, 2, 3], 2), vec![1, 2]);
+    assert_eq!(bounded_limit(Some(usize::MAX), 20), MAX_COLLECTION_LIMIT);
 
     let call = request_json(
         router.clone(),
@@ -671,6 +673,7 @@ async fn protected_mcp_router_allows_sse_and_session_delete() {
         .and_then(|value| value.to_str().ok())
         .expect("session id");
     assert!(!sse_session_id.is_empty());
+    let sse_session_id = sse_session_id.to_string();
     let body = to_bytes(get.into_body(), usize::MAX)
         .await
         .expect("sse body");
@@ -718,12 +721,14 @@ async fn protected_mcp_router_allows_sse_and_session_delete() {
         .to_string();
 
     let deleted = router
+        .clone()
         .oneshot(
             Request::builder()
                 .method("DELETE")
                 .uri("/syslog")
                 .header("host", "mcp.example.test")
                 .header("x-forwarded-proto", "https")
+                .header("accept", "application/json")
                 .header(MCP_SESSION_ID, session_id)
                 .header(
                     "authorization",
@@ -735,6 +740,27 @@ async fn protected_mcp_router_allows_sse_and_session_delete() {
         .await
         .expect("response");
     assert_eq!(deleted.status(), StatusCode::NO_CONTENT);
+
+    let invalid_origin_delete = router
+        .oneshot(
+            Request::builder()
+                .method("DELETE")
+                .uri("/syslog")
+                .header("host", "mcp.example.test")
+                .header("x-forwarded-proto", "https")
+                .header("origin", "https://evil.example.test")
+                .header("accept", "application/json")
+                .header(MCP_SESSION_ID, sse_session_id)
+                .header(
+                    "authorization",
+                    "Bearer sub=user-1;aud=https://mcp.example.test/syslog;scope=mcp:read",
+                )
+                .body(Body::empty())
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+    assert_eq!(invalid_origin_delete.status(), StatusCode::FORBIDDEN);
 }
 
 #[tokio::test]

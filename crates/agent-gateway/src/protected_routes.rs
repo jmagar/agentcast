@@ -198,6 +198,10 @@ impl ProtectedRouteIndex {
         let route_key = self.metadata_routes.get(&(host, path.to_string()))?.clone();
         self.routes.get(&route_key)
     }
+
+    pub fn routes(&self) -> impl Iterator<Item = &ResolvedProtectedRoute> {
+        self.routes.values()
+    }
 }
 
 fn normalize_host(raw: &str) -> Result<String, GatewayError> {

@@ -130,6 +130,11 @@ Surface crates must not:
 - invoke protocol SDKs directly.
 - mutate install targets outside runtime/apply APIs.
 
+Current documented exception: `agent-server` may depend on `agent-mcp` only for
+the temporary v0 stdio gateway composition path. It must not grow additional
+MCP adapter policy, and `cargo xtask audit-deps` must encode this exception
+explicitly rather than allowing broad surface-to-adapter dependencies.
+
 ## Adapter Restrictions
 
 Protocol adapters must be thin.

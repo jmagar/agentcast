@@ -49,3 +49,16 @@ fn flags_surface_to_adapter_dependency() {
     assert!(findings[0].contains("agent-api"));
     assert!(findings[0].contains("agent-mcp"));
 }
+
+#[test]
+fn allows_documented_agent_server_stdio_gateway_exception() {
+    let manifest = ManifestDeps {
+        package: "agent-server".to_owned(),
+        dependencies: vec!["agent-mcp".to_owned()],
+    };
+    let mut findings = Vec::new();
+
+    check_manifest(&manifest, &mut findings);
+
+    assert!(findings.is_empty());
+}

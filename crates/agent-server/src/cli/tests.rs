@@ -37,6 +37,29 @@ fn parses_gateway_cli_subcommands() {
 }
 
 #[test]
+fn parses_protected_mcp_server_bearer_token_flag() {
+    let args = Args::try_parse_from([
+        "agentcast",
+        "--protected-mcp-host",
+        "mcp.example.test",
+        "--protected-mcp-path",
+        "/syslog",
+        "--protected-mcp-server",
+        "syslog",
+        "--protected-mcp-auth-server",
+        "https://auth.example.test",
+        "--protected-mcp-bearer-token",
+        "secret-token",
+    ])
+    .expect("parse");
+
+    assert_eq!(
+        args.protected_mcp_bearer_token,
+        Some("secret-token".to_string())
+    );
+}
+
+#[test]
 fn parses_protected_route_cli_subcommands() {
     let args = Args::try_parse_from([
         "agentcast",

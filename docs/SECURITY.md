@@ -123,8 +123,11 @@ untrusted client-supplied headers.
 
 The fixture bearer verifier is for local tests and development only. Production
 or exposed protected routes must use static bearer or JWT/OAuth verification
-configured for the deployment. Missing or invalid bearer credentials must fail
-before runtime dispatch; insufficient scope must fail before upstream MCP calls.
+configured for the deployment. The `agentcast` server's v0 protected MCP startup
+path requires `--protected-mcp-bearer-token` or
+`AGENTCAST_PROTECTED_MCP_BEARER_TOKEN` so exposed routes are not mounted with an
+empty verifier. Missing or invalid bearer credentials must fail before runtime
+dispatch; insufficient scope must fail before upstream MCP calls.
 
 Streamable HTTP support must continue to follow upstream Origin validation,
 localhost binding, and authentication guidance before AgentCast exposes non-stdio

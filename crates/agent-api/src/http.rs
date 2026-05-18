@@ -137,6 +137,23 @@ where
     protected_mcp_router_with_oauth_service(routes, runtime, Some(shared_oauth_service(store)))
 }
 
+pub fn protected_mcp_router_with_oauth_store_and_verifier<S>(
+    routes: ProtectedRouteIndex,
+    runtime: Arc<McpRuntime>,
+    store: S,
+    verifier: Arc<dyn BearerTokenVerifier>,
+) -> Router
+where
+    S: OAuthStore + Send + 'static,
+{
+    protected_mcp_router_with_oauth_service_and_verifier(
+        routes,
+        runtime,
+        Some(shared_oauth_service(store)),
+        verifier,
+    )
+}
+
 fn protected_mcp_router_with_oauth_service(
     routes: ProtectedRouteIndex,
     runtime: Arc<McpRuntime>,
@@ -177,16 +194,28 @@ fn protected_mcp_router_with_oauth_service_and_verifier(
         .with_state(Arc::new(state))
 }
 
-async fn list_actions(State(api): State<Arc<GatewayApi>>) -> Json<Vec<GatewayApiAction>> {
-    Json(api.list_actions())
+async fn list_actions(
+    State(api): State<Arc<GatewayApi>>,
+    Query(query): Query<CollectionQuery>,
+) -> Json<Vec<GatewayApiAction>> {
+    Json(limit_items(
+        api.list_actions(),
+        bounded_limit(query.limit, DEFAULT_COLLECTION_LIMIT),
+    ))
 }
 
 async fn gateway_status(State(api): State<Arc<GatewayApi>>) -> Json<GatewayApiStatus> {
     Json(api.status())
 }
 
-async fn list_servers(State(api): State<Arc<GatewayApi>>) -> Json<Vec<GatewayApiServer>> {
-    Json(api.list_servers())
+async fn list_servers(
+    State(api): State<Arc<GatewayApi>>,
+    Query(query): Query<CollectionQuery>,
+) -> Json<Vec<GatewayApiServer>> {
+    Json(limit_items(
+        api.list_servers(),
+        bounded_limit(query.limit, DEFAULT_COLLECTION_LIMIT),
+    ))
 }
 
 async fn search_actions(
@@ -200,7 +229,10 @@ async fn list_resources(
     State(api): State<Arc<GatewayApi>>,
     Query(query): Query<ListByServerQuery>,
 ) -> Json<Vec<GatewayApiResource>> {
-    Json(api.list_resources(query.server_id.as_deref()))
+    Json(limit_items(
+        api.list_resources(query.server_id.as_deref()),
+        bounded_limit(query.limit, DEFAULT_COLLECTION_LIMIT),
+    ))
 }
 
 async fn registry_search(
@@ -268,7 +300,10 @@ async fn list_prompts(
     State(api): State<Arc<GatewayApi>>,
     Query(query): Query<ListByServerQuery>,
 ) -> Json<Vec<GatewayApiPrompt>> {
-    Json(api.list_prompts(query.server_id.as_deref()))
+    Json(limit_items(
+        api.list_prompts(query.server_id.as_deref()),
+        bounded_limit(query.limit, DEFAULT_COLLECTION_LIMIT),
+    ))
 }
 
 async fn get_prompt(
@@ -777,6 +812,10 @@ async fn protected_delete_session(
     OriginalUri(uri): OriginalUri,
     headers: HeaderMap,
 ) -> Response {
+    if let Err(rejection) = validate_mcp_transport_headers(&state, &headers, uri.path()) {
+        return mcp_transport_rejection(rejection);
+    }
+
     let authorization = state
         .api
         .handle(protected_request(&headers, uri.path(), &state, None));
@@ -1002,6 +1041,11 @@ fn bounded_limit(requested: Option<usize>, default: usize) -> usize {
     requested.unwrap_or(default).clamp(1, MAX_COLLECTION_LIMIT)
 }
 
+fn limit_items<T>(mut items: Vec<T>, limit: usize) -> Vec<T> {
+    items.truncate(limit);
+    items
+}
+
 fn next_sse_event_id(last_event_id: &str) -> String {
     last_event_id
         .parse::<u64>()
@@ -1090,8 +1134,14 @@ struct SearchActionsQuery {
 }
 
 #[derive(Debug, Deserialize)]
+struct CollectionQuery {
+    limit: Option<usize>,
+}
+
+#[derive(Debug, Deserialize)]
 struct ListByServerQuery {
     server_id: Option<String>,
+    limit: Option<usize>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1303,6 +1353,7 @@ type SharedOAuthService = Arc<Mutex<GatewayOAuthService<Box<dyn OAuthStore + Sen
 type SharedMcpSessions = Arc<Mutex<McpSessions>>;
 
 const MCP_SESSION_ID: &str = "mcp-session-id";
+const DEFAULT_COLLECTION_LIMIT: usize = 20;
 const DEFAULT_SEARCH_LIMIT: usize = 10;
 const DEFAULT_REGISTRY_LIMIT: usize = 20;
 const MAX_COLLECTION_LIMIT: usize = 100;

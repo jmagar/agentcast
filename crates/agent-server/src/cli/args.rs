@@ -28,6 +28,8 @@ pub(crate) struct Args {
     pub(crate) protected_mcp_auth_servers: Vec<String>,
     #[arg(long, default_value = "mcp:read")]
     pub(crate) protected_mcp_scopes: String,
+    #[arg(long, env = "AGENTCAST_PROTECTED_MCP_BEARER_TOKEN")]
+    pub(crate) protected_mcp_bearer_token: Option<String>,
     #[arg(long)]
     pub(crate) oauth_store: Option<PathBuf>,
     #[arg(long, env = "AGENTCAST_OAUTH_KEY_HEX")]

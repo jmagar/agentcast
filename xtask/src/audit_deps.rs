@@ -8,16 +8,6 @@ use crate::{Error, Result};
 
 const FORBIDDEN_DEPENDENCIES: &[ForbiddenDependency] = &[
     ForbiddenDependency::new(
-        "agent-api",
-        "agent-mcp",
-        "surface crates must not depend directly on protocol adapters; route through runtime/domain crates",
-    ),
-    ForbiddenDependency::new(
-        "agent-cli",
-        "agent-mcp",
-        "surface crates must not depend directly on protocol adapters; route through runtime/domain crates",
-    ),
-    ForbiddenDependency::new(
         "agent-protocol",
         "agent-mcp",
         "protocol/model crates must stay adapter-neutral",
@@ -28,6 +18,19 @@ const FORBIDDEN_DEPENDENCIES: &[ForbiddenDependency] = &[
         "protocol/model crates must stay adapter-neutral",
     ),
 ];
+
+const SURFACE_CRATES: &[&str] = &[
+    "agent-api",
+    "agent-cli",
+    "agent-server",
+    "agent-ui-contracts",
+];
+const PROTOCOL_ADAPTERS: &[&str] = &["agent-mcp", "agent-acp"];
+const SURFACE_ADAPTER_EXCEPTIONS: &[(&str, &str, &str)] = &[(
+    "agent-server",
+    "agent-mcp",
+    "server binary owns the temporary v0 stdio gateway composition until that adapter boundary is split",
+)];
 
 const LOW_LEVEL_FORBIDDEN: &[(&str, &[&str], &str)] = &[
     (
@@ -133,6 +136,19 @@ fn check_manifest(manifest: &ManifestDeps, findings: &mut Vec<String>) {
         }
     }
 
+    if SURFACE_CRATES.contains(&manifest.package.as_str()) {
+        for dependency in PROTOCOL_ADAPTERS {
+            if manifest.has_dependency(dependency)
+                && surface_adapter_exception(&manifest.package, dependency).is_none()
+            {
+                findings.push(format!(
+                    "{}: direct dependency on {} violates surface crates must not invoke protocol SDKs directly",
+                    manifest.package, dependency
+                ));
+            }
+        }
+    }
+
     for (crate_name, dependencies, rule) in LOW_LEVEL_FORBIDDEN {
         if manifest.package == *crate_name {
             for dependency in *dependencies {
@@ -154,6 +170,15 @@ fn check_manifest(manifest: &ManifestDeps, findings: &mut Vec<String>) {
             ));
         }
     }
+}
+
+fn surface_adapter_exception(crate_name: &str, dependency: &str) -> Option<&'static str> {
+    SURFACE_ADAPTER_EXCEPTIONS
+        .iter()
+        .find(|(allowed_crate, allowed_dependency, _)| {
+            *allowed_crate == crate_name && *allowed_dependency == dependency
+        })
+        .map(|(_, _, reason)| *reason)
 }
 
 fn parse_manifest_dependencies(content: &str) -> std::result::Result<Option<ManifestDeps>, String> {

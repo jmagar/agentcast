@@ -6,10 +6,16 @@ use crate::{
     routes::protected_route_index,
 };
 use agent_api::{
-    GatewayApi, gateway_router, protected_mcp_router, protected_mcp_router_with_oauth_store,
+    GatewayApi, gateway_router, protected_mcp_router_with_oauth_store_and_verifier,
+    protected_mcp_router_with_verifier,
 };
+use agent_auth::{BearerClaims, StaticBearerTokenVerifier};
 use agent_gateway::ProtectedRouteIndex;
 use agent_store::SqliteOAuthStore;
+use std::sync::Arc;
+
+#[cfg(test)]
+mod tests;
 
 pub(crate) async fn run(args: Args) -> anyhow::Result<()> {
     let configs = load_mcp_configs_from(
@@ -34,6 +40,7 @@ pub(crate) async fn run(args: Args) -> anyhow::Result<()> {
         router = router.merge(protected_mcp_router_for_store_args(
             args.oauth_store.as_ref(),
             args.oauth_key_hex.as_ref(),
+            args.protected_mcp_bearer_token.as_ref(),
             routes,
             runtime,
         )?);
@@ -79,16 +86,44 @@ async fn shutdown_signal() {
 fn protected_mcp_router_for_store_args(
     oauth_store: Option<&std::path::PathBuf>,
     oauth_key_hex: Option<&String>,
+    bearer_token: Option<&String>,
     routes: ProtectedRouteIndex,
-    runtime: std::sync::Arc<agent_runtime::McpRuntime>,
+    runtime: Arc<agent_runtime::McpRuntime>,
 ) -> anyhow::Result<axum::Router> {
+    let verifier = protected_mcp_static_verifier(bearer_token, &routes)?;
     match (oauth_store, oauth_key_hex) {
         (Some(path), Some(key_hex)) => {
             let store = SqliteOAuthStore::open(path, parse_oauth_key(key_hex)?)?;
-            Ok(protected_mcp_router_with_oauth_store(
-                routes, runtime, store,
+            Ok(protected_mcp_router_with_oauth_store_and_verifier(
+                routes, runtime, store, verifier,
             ))
         }
-        _ => Ok(protected_mcp_router(routes, runtime)),
+        _ => Ok(protected_mcp_router_with_verifier(
+            routes, runtime, verifier,
+        )),
     }
+}
+
+fn protected_mcp_static_verifier(
+    bearer_token: Option<&String>,
+    routes: &ProtectedRouteIndex,
+) -> anyhow::Result<Arc<StaticBearerTokenVerifier>> {
+    let token = bearer_token.ok_or_else(|| {
+        anyhow::anyhow!(
+            "--protected-mcp-bearer-token or AGENTCAST_PROTECTED_MCP_BEARER_TOKEN is required for protected MCP routes"
+        )
+    })?;
+    let claims = routes
+        .routes()
+        .next()
+        .map(|route| BearerClaims {
+            subject: "protected-mcp-static".to_string(),
+            audience: route.resource_uri.to_string(),
+            scopes: route.required_scopes.clone(),
+        })
+        .ok_or_else(|| anyhow::anyhow!("at least one protected MCP route is required"))?;
+    Ok(Arc::new(StaticBearerTokenVerifier::new([(
+        token.clone(),
+        claims,
+    )])))
 }

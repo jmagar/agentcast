@@ -34,6 +34,7 @@ fn args_without_config() -> crate::cli::Args {
         protected_mcp_resource: None,
         protected_mcp_auth_servers: vec!["https://auth.example.test".to_string()],
         protected_mcp_scopes: "mcp:read".to_string(),
+        protected_mcp_bearer_token: None,
         oauth_store: None,
         oauth_key_hex: None,
     }
