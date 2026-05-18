@@ -14,4 +14,6 @@ pub use mcp_params::{
     validate_env_name, validate_env_value, validate_registry_url, validate_runtime_hint,
     validate_stdio_argv,
 };
-pub use plan::{InstallPlan, InstallStep, InstallStepKind};
+pub use plan::{
+    InstallMcpUpstreamTransport, InstallPlan, InstallStep, InstallStepApply, InstallStepKind,
+};

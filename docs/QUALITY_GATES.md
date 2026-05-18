@@ -13,9 +13,9 @@ related:
   - "docs/DECISIONS.md"
   - "docs/DEVELOPMENT.md"
   - "docs/TESTING.md"
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-18"
+last_modified: "2026-05-18"
+modified_on_branch: "review-remediation/full-review-issues"
 modified_at_version: "0.1.0"
 modified_at_commit: "b941533"
 review_basis: "local repo tooling policy"
@@ -47,6 +47,11 @@ cargo xtask audit-docs
 cargo xtask secrets
 ```
 
+Run `cargo xtask doctor` first when setting up a machine or when a gate fails
+before Cargo starts. Doctor checks the active cargo path, required subcommands
+such as `cargo-nextest` and `cargo-deny`, `taplo`, hook files, and local wrapper
+smoke tests.
+
 ## Before Merge
 
 Before merging substantial changes:
@@ -55,7 +60,11 @@ Before merging substantial changes:
 cargo xtask verify
 ```
 
-For crate dependency changes, also review [contracts/crates-and-dependencies.md](./contracts/crates-and-dependencies.md) and [specs/crates-and-dependencies.md](./specs/crates-and-dependencies.md). When `cargo xtask audit-deps` exists, dependency changes should run it before merge.
+For crate dependency changes, also review [contracts/crates-and-dependencies.md](./contracts/crates-and-dependencies.md) and [specs/crates-and-dependencies.md](./specs/crates-and-dependencies.md), then run:
+
+```bash
+cargo xtask audit-deps
+```
 
 Run narrower commands when debugging:
 
@@ -66,6 +75,7 @@ cargo xtask clippy
 cargo xtask nextest
 cargo xtask nextest-ci
 cargo xtask deny
+cargo xtask audit-deps
 cargo xtask test
 ```
 

@@ -1,5 +1,8 @@
 use super::*;
 
+const NOW: i64 = 1_800_000_000;
+const ISSUER: &str = "https://auth.example.test";
+
 fn scopes(raw: &str) -> ScopeSet {
     ScopeSet::parse(raw).expect("valid scopes")
 }
@@ -115,22 +118,19 @@ fn static_token_verifier_maps_opaque_token_to_claims() {
 
 #[test]
 fn jwt_verifier_accepts_hs256_jwks_tokens() {
-    let verifier = JwtBearerTokenVerifier::from_jwks(Jwks {
-        keys: vec![Jwk {
-            kty: "oct".to_string(),
-            kid: Some("fixture-key".to_string()),
-            alg: Some("HS256".to_string()),
-            k: Some(base64url_encode(b"super-secret")),
-        }],
-    })
-    .expect("verifier")
-    .with_expected_audience("https://mcp.example.test/syslog");
+    let verifier = jwt_verifier()
+        .with_expected_audience("https://mcp.example.test/syslog")
+        .with_expected_issuer(ISSUER)
+        .with_now_unix_timestamp(NOW);
     let token = signed_jwt(
         "fixture-key",
         b"super-secret",
         serde_json::json!({
             "sub": "user-1",
             "aud": ["https://mcp.example.test/syslog", "other"],
+            "iss": ISSUER,
+            "exp": NOW + 300,
+            "nbf": NOW - 30,
             "scope": "mcp:read mcp:write"
         }),
     );
@@ -146,21 +146,14 @@ fn jwt_verifier_accepts_hs256_jwks_tokens() {
 
 #[test]
 fn jwt_verifier_rejects_tampered_payload() {
-    let verifier = JwtBearerTokenVerifier::from_jwks(Jwks {
-        keys: vec![Jwk {
-            kty: "oct".to_string(),
-            kid: Some("fixture-key".to_string()),
-            alg: Some("HS256".to_string()),
-            k: Some(base64url_encode(b"super-secret")),
-        }],
-    })
-    .expect("verifier");
+    let verifier = jwt_verifier().with_now_unix_timestamp(NOW);
     let token = signed_jwt(
         "fixture-key",
         b"super-secret",
         serde_json::json!({
             "sub": "user-1",
             "aud": "https://mcp.example.test/syslog",
+            "exp": NOW + 300,
             "scp": ["mcp:read"]
         }),
     );
@@ -176,22 +169,16 @@ fn jwt_verifier_rejects_tampered_payload() {
 
 #[test]
 fn jwt_verifier_rejects_wrong_audience() {
-    let verifier = JwtBearerTokenVerifier::from_jwks(Jwks {
-        keys: vec![Jwk {
-            kty: "oct".to_string(),
-            kid: Some("fixture-key".to_string()),
-            alg: Some("HS256".to_string()),
-            k: Some(base64url_encode(b"super-secret")),
-        }],
-    })
-    .expect("verifier")
-    .with_expected_audience("https://mcp.example.test/syslog");
+    let verifier = jwt_verifier()
+        .with_expected_audience("https://mcp.example.test/syslog")
+        .with_now_unix_timestamp(NOW);
     let token = signed_jwt(
         "fixture-key",
         b"super-secret",
         serde_json::json!({
             "sub": "user-1",
             "aud": "https://wrong.example.test/syslog",
+            "exp": NOW + 300,
             "scope": "mcp:read"
         }),
     );
@@ -200,6 +187,149 @@ fn jwt_verifier_rejects_wrong_audience() {
         verifier.verify(&format!("Bearer {token}")).unwrap_err(),
         BearerError::InvalidToken
     );
+}
+
+#[test]
+fn jwt_verifier_rejects_expired_token() {
+    let verifier = jwt_verifier()
+        .with_clock_skew_seconds(30)
+        .with_now_unix_timestamp(NOW);
+    let token = signed_jwt(
+        "fixture-key",
+        b"super-secret",
+        serde_json::json!({
+            "sub": "user-1",
+            "aud": "https://mcp.example.test/syslog",
+            "exp": NOW - 31,
+            "scope": "mcp:read"
+        }),
+    );
+
+    assert_eq!(
+        verifier.verify(&format!("Bearer {token}")).unwrap_err(),
+        BearerError::TokenExpired
+    );
+}
+
+#[test]
+fn jwt_verifier_allows_expiration_inside_clock_skew() {
+    let verifier = jwt_verifier()
+        .with_clock_skew_seconds(30)
+        .with_now_unix_timestamp(NOW);
+    let token = signed_jwt(
+        "fixture-key",
+        b"super-secret",
+        serde_json::json!({
+            "sub": "user-1",
+            "aud": "https://mcp.example.test/syslog",
+            "exp": NOW - 30,
+            "scope": "mcp:read"
+        }),
+    );
+
+    let claims = verifier
+        .verify(&format!("Bearer {token}"))
+        .expect("token inside skew");
+    assert_eq!(claims.subject, "user-1");
+}
+
+#[test]
+fn jwt_verifier_rejects_missing_expiration() {
+    let verifier = jwt_verifier().with_now_unix_timestamp(NOW);
+    let token = signed_jwt(
+        "fixture-key",
+        b"super-secret",
+        serde_json::json!({
+            "sub": "user-1",
+            "aud": "https://mcp.example.test/syslog",
+            "scope": "mcp:read"
+        }),
+    );
+
+    assert_eq!(
+        verifier.verify(&format!("Bearer {token}")).unwrap_err(),
+        BearerError::MissingExpiration
+    );
+}
+
+#[test]
+fn jwt_verifier_rejects_not_yet_valid_token() {
+    let verifier = jwt_verifier()
+        .with_clock_skew_seconds(30)
+        .with_now_unix_timestamp(NOW);
+    let token = signed_jwt(
+        "fixture-key",
+        b"super-secret",
+        serde_json::json!({
+            "sub": "user-1",
+            "aud": "https://mcp.example.test/syslog",
+            "exp": NOW + 300,
+            "nbf": NOW + 31,
+            "scope": "mcp:read"
+        }),
+    );
+
+    assert_eq!(
+        verifier.verify(&format!("Bearer {token}")).unwrap_err(),
+        BearerError::TokenNotYetValid
+    );
+}
+
+#[test]
+fn jwt_verifier_rejects_wrong_issuer() {
+    let verifier = jwt_verifier()
+        .with_expected_issuer(ISSUER)
+        .with_now_unix_timestamp(NOW);
+    let token = signed_jwt(
+        "fixture-key",
+        b"super-secret",
+        serde_json::json!({
+            "sub": "user-1",
+            "aud": "https://mcp.example.test/syslog",
+            "iss": "https://wrong.example.test",
+            "exp": NOW + 300,
+            "scope": "mcp:read"
+        }),
+    );
+
+    assert_eq!(
+        verifier.verify(&format!("Bearer {token}")).unwrap_err(),
+        BearerError::InvalidIssuer
+    );
+}
+
+#[test]
+fn jwt_verifier_rejects_missing_issuer_when_configured() {
+    let verifier = jwt_verifier()
+        .with_expected_issuer(ISSUER)
+        .with_now_unix_timestamp(NOW);
+    let token = signed_jwt(
+        "fixture-key",
+        b"super-secret",
+        serde_json::json!({
+            "sub": "user-1",
+            "aud": "https://mcp.example.test/syslog",
+            "exp": NOW + 300,
+            "scope": "mcp:read"
+        }),
+    );
+
+    assert_eq!(
+        verifier.verify(&format!("Bearer {token}")).unwrap_err(),
+        BearerError::InvalidIssuer
+    );
+}
+
+fn jwt_verifier() -> JwtBearerTokenVerifier {
+    JwtBearerTokenVerifier::from_jwks(Jwks {
+        keys: vec![Jwk {
+            kty: "oct".to_string(),
+            kid: Some("fixture-key".to_string()),
+            alg: Some("HS256".to_string()),
+            k: Some(base64url_encode(b"super-secret")),
+        }],
+    })
+    .expect("verifier")
 }
 
 fn signed_jwt(kid: &str, secret: &[u8], payload: serde_json::Value) -> String {

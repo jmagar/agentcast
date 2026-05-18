@@ -8,6 +8,9 @@ repository.workspace = true
 authors.workspace = true
 description = "AgentCast authentication primitives, bearer/session auth, and optional HTTP auth integration."
 
+[features]
+fixture-auth = []
+
 [dependencies]
 agent-core = { path = "../agent-core" }
 agent-config = { path = "../agent-config" }

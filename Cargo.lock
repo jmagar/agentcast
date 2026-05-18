@@ -72,7 +72,6 @@ dependencies = [
  "agent-core",
  "agent-gateway",
  "agent-marketplace",
- "agent-mcp",
  "agent-protocol",
  "agent-registry",
  "agent-runtime",

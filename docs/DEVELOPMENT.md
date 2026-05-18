@@ -16,9 +16,9 @@ related:
   - "docs/DEV_SPEED.md"
   - "docs/QUALITY_GATES.md"
   - "docs/TESTING.md"
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-18"
+last_modified: "2026-05-18"
+modified_on_branch: "review-remediation/full-review-issues"
 modified_at_version: "0.1.0"
 modified_at_commit: "b941533"
 review_basis: "local repo tooling policy"
@@ -61,6 +61,16 @@ Use the doctor task when you only want to verify the environment without modifyi
 cargo xtask doctor
 ```
 
+Doctor also runs cargo metadata and a small `xtask` compile smoke test. If the
+active cargo/rustc path is routed through a broken wrapper, Snap-backed rustc, or
+failing `RUSTC_WRAPPER`/`sccache`, doctor should report that before longer gates.
+For local debugging only, clearing the wrapper for one command can isolate the
+problem:
+
+```bash
+RUSTC_WRAPPER= cargo xtask doctor
+```
+
 Install hooks explicitly when needed:
 
 ```bash
@@ -79,6 +89,7 @@ cargo xtask nextest
 cargo xtask nextest-ci
 cargo xtask file-size
 cargo xtask deny
+cargo xtask audit-deps
 cargo xtask ci
 cargo xtask verify
 ```

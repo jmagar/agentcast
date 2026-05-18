@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-const REDACTED: &str = "[redacted]";
+pub const REDACTED: &str = "[REDACTED]";
 
 pub fn should_redact_key(key: &str) -> bool {
     let key = key.to_ascii_uppercase();

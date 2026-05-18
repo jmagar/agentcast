@@ -13,8 +13,9 @@ pub use http::{
     OAuthAuthorizeResponse, OAuthCallbackRequest, OAuthClientRegistrationResponse,
     OAuthProbeRequest, OAuthProbeResponse, OAuthRefreshHttpRequest, OAuthRegisterHttpRequest,
     ReadResourceRequest, gateway_router, marketplace_router, oauth_router, oauth_router_with_store,
-    protected_mcp_router, protected_mcp_router_with_oauth_store, protected_route_admin_router,
-    registry_router, registry_router_from_cache,
+    protected_mcp_router, protected_mcp_router_with_oauth_store,
+    protected_mcp_router_with_verifier, protected_route_admin_router, registry_router,
+    registry_router_from_cache,
 };
 pub use oauth::{OAuthApiStatus, OAuthStatusResponse};
 pub use protected_mcp::{

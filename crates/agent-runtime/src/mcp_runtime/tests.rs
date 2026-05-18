@@ -3,13 +3,17 @@ use agent_protocol::{McpServerConfig, McpTransportConfig};
 use serde_json::json;
 
 fn fixture_config(enabled: bool) -> McpServerConfig {
+    fixture_config_with_id("fixture", enabled)
+}
+
+fn fixture_config_with_id(id: &str, enabled: bool) -> McpServerConfig {
     let server = format!(
         "{}/../agent-mcp/src/fixtures/mcp_echo_server.js",
         env!("CARGO_MANIFEST_DIR")
     );
     McpServerConfig {
-        id: McpServerId::new("fixture"),
-        name: "Fixture".to_string(),
+        id: McpServerId::new(id),
+        name: format!("Fixture {id}"),
         enabled,
         transport: McpTransportConfig::Stdio {
             command: "node".to_string(),
@@ -30,6 +34,23 @@ async fn runtime_discovers_enabled_stdio_upstream_catalog() {
     assert_eq!(snapshot.resources[0].name, "fixture");
     assert_eq!(snapshot.resource_templates[0].name, "fixture-template");
     assert_eq!(snapshot.prompts[0].name, "summarize");
+}
+
+#[tokio::test]
+async fn runtime_start_preserves_deterministic_snapshot_order() {
+    let runtime = McpRuntime::start(vec![
+        fixture_config_with_id("z-fixture", false),
+        fixture_config_with_id("a-fixture", false),
+        fixture_config_with_id("m-fixture", false),
+    ])
+    .await;
+    let server_ids = runtime
+        .snapshots()
+        .into_iter()
+        .map(|snapshot| snapshot.server_id.to_string())
+        .collect::<Vec<_>>();
+
+    assert_eq!(server_ids, vec!["a-fixture", "m-fixture", "z-fixture"]);
 }
 
 #[tokio::test]
@@ -122,10 +143,55 @@ async fn runtime_opens_circuit_after_repeated_operation_failures_and_reprobe_res
         })
         .await
         .expect_err("open circuit should reject");
-    assert_eq!(error, RuntimeError::CircuitOpen("Fixture".to_string()));
+    assert_eq!(
+        error,
+        RuntimeError::CircuitOpen("Fixture fixture".to_string())
+    );
 
     runtime.reprobe(&server_id).await.expect("reprobe");
     assert!(!runtime.circuit_open(&server_id));
+}
+
+#[tokio::test]
+async fn runtime_shutdown_cancels_retained_lifecycle_tokens() {
+    let runtime = McpRuntime::start(vec![fixture_config(true)]).await;
+    let upstream = runtime
+        .upstreams
+        .get(&McpServerId::new("fixture"))
+        .expect("fixture upstream");
+    let token = upstream.lifecycle_token.clone();
+
+    runtime.shutdown().await;
+
+    assert!(token.is_cancelled());
+}
+
+#[test]
+fn catalog_discovery_keeps_successful_kinds_when_one_kind_fails() {
+    let mut failures = Vec::new();
+
+    let tools = collect_catalog_result::<RuntimeTool>(
+        "tools",
+        Err(RuntimeError::Mcp("tools unavailable".to_string())),
+        &mut failures,
+    );
+    let prompts = collect_catalog_result(
+        "prompts",
+        Ok(vec![RuntimePrompt {
+            name: "summarize".to_string(),
+            title: None,
+            description: None,
+            arguments: Value::Null,
+        }]),
+        &mut failures,
+    );
+
+    assert!(tools.is_empty());
+    assert_eq!(prompts.len(), 1);
+    assert_eq!(
+        failures,
+        vec!["tools: MCP runtime error: tools unavailable"]
+    );
 }
 
 #[tokio::test]

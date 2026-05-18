@@ -21,7 +21,7 @@ fn api() -> ProtectedMcpRouteApi {
     }])
     .expect("route index");
 
-    ProtectedMcpRouteApi::new(routes)
+    ProtectedMcpRouteApi::new_with_fixture_verifier(routes)
 }
 
 fn route_index() -> ProtectedRouteIndex {
@@ -57,6 +57,48 @@ fn static_bearer_verifier_authorizes_opaque_tokens() {
         path: "/syslog".to_string(),
         public_origin: "https://mcp.example.test".to_string(),
         authorization: Some("Bearer opaque-token".to_string()),
+    });
+
+    let ProtectedMcpResponse::DispatchAllowed {
+        status, subject, ..
+    } = response
+    else {
+        panic!("expected dispatch");
+    };
+    assert_eq!(status, ResponseStatus::Accepted);
+    assert_eq!(subject, "user-1");
+}
+
+#[test]
+fn default_verifier_rejects_fixture_shaped_authorization_header() {
+    let api = ProtectedMcpRouteApi::new(route_index());
+
+    let response = api.handle(ProtectedMcpRequest {
+        host: "mcp.example.test".to_string(),
+        path: "/syslog".to_string(),
+        public_origin: "https://mcp.example.test".to_string(),
+        authorization: Some(
+            "Bearer sub=user-1;aud=https://mcp.example.test/syslog;scope=mcp:read".to_string(),
+        ),
+    });
+
+    let ProtectedMcpResponse::Challenge { status, .. } = response else {
+        panic!("expected challenge");
+    };
+    assert_eq!(status, ResponseStatus::Unauthorized);
+}
+
+#[test]
+fn fixture_verifier_must_be_selected_explicitly() {
+    let api = ProtectedMcpRouteApi::new_with_fixture_verifier(route_index());
+
+    let response = api.handle(ProtectedMcpRequest {
+        host: "mcp.example.test".to_string(),
+        path: "/syslog".to_string(),
+        public_origin: "https://mcp.example.test".to_string(),
+        authorization: Some(
+            "Bearer sub=user-1;aud=https://mcp.example.test/syslog;scope=mcp:read".to_string(),
+        ),
     });
 
     let ProtectedMcpResponse::DispatchAllowed {

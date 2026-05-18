@@ -5,8 +5,8 @@ use crate::{
     ResponseStatus,
 };
 use agent_auth::{
-    OAuthCallback, OAuthClientRegistration, OAuthCredential, OAuthProviderMetadata,
-    OAuthRefreshRequest, OAuthRefreshResult, ScopeSet,
+    BearerTokenVerifier, OAuthCallback, OAuthClientRegistration, OAuthCredential,
+    OAuthProviderMetadata, OAuthRefreshRequest, OAuthRefreshResult, ScopeSet,
 };
 use agent_config::AgentConfig;
 use agent_gateway::{
@@ -37,6 +37,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     convert::Infallible,
     sync::{Arc, Mutex as StdMutex},
+    time::{Duration, Instant},
 };
 use tokio::sync::Mutex;
 
@@ -99,6 +100,14 @@ pub fn protected_mcp_router(routes: ProtectedRouteIndex, runtime: Arc<McpRuntime
     protected_mcp_router_with_oauth_service(routes, runtime, None)
 }
 
+pub fn protected_mcp_router_with_verifier(
+    routes: ProtectedRouteIndex,
+    runtime: Arc<McpRuntime>,
+    verifier: Arc<dyn BearerTokenVerifier>,
+) -> Router {
+    protected_mcp_router_with_oauth_service_and_verifier(routes, runtime, None, verifier)
+}
+
 pub fn protected_route_admin_router(routes: ProtectedRouteCollection) -> Router {
     Router::new()
         .route("/v1/protected-routes", get(protected_routes_list))
@@ -133,11 +142,25 @@ fn protected_mcp_router_with_oauth_service(
     runtime: Arc<McpRuntime>,
     oauth: Option<SharedOAuthService>,
 ) -> Router {
-    let state = ProtectedMcpHttpState {
-        api: ProtectedMcpRouteApi::new(routes),
+    protected_mcp_router_with_oauth_service_and_verifier(
+        routes,
         runtime,
         oauth,
-        sessions: Arc::new(Mutex::new(BTreeSet::new())),
+        Arc::new(agent_auth::StaticBearerTokenVerifier::default()),
+    )
+}
+
+fn protected_mcp_router_with_oauth_service_and_verifier(
+    routes: ProtectedRouteIndex,
+    runtime: Arc<McpRuntime>,
+    oauth: Option<SharedOAuthService>,
+    verifier: Arc<dyn BearerTokenVerifier>,
+) -> Router {
+    let state = ProtectedMcpHttpState {
+        api: ProtectedMcpRouteApi::new_with_verifier(routes, verifier),
+        runtime,
+        oauth,
+        sessions: Arc::new(Mutex::new(McpSessions::default())),
     };
 
     Router::new()
@@ -170,7 +193,7 @@ async fn search_actions(
     State(api): State<Arc<GatewayApi>>,
     Query(query): Query<SearchActionsQuery>,
 ) -> Json<Vec<GatewayApiSearchResult>> {
-    Json(api.search_actions(&query.q, query.limit.unwrap_or(10)))
+    Json(api.search_actions(&query.q, bounded_limit(query.limit, DEFAULT_SEARCH_LIMIT)))
 }
 
 async fn list_resources(
@@ -187,7 +210,7 @@ async fn registry_search(
     Json(search_servers(
         &state.servers,
         &query.q,
-        query.limit.unwrap_or(20),
+        bounded_limit(query.limit, DEFAULT_REGISTRY_LIMIT),
     ))
 }
 
@@ -649,7 +672,7 @@ async fn protected_metadata(
 ) -> Response {
     match state
         .api
-        .handle(protected_request(&headers, uri.path(), None))
+        .handle(protected_request(&headers, uri.path(), &state, None))
     {
         ProtectedMcpResponse::Metadata { status, metadata } => {
             (status_code(status), Json(metadata)).into_response()
@@ -664,7 +687,7 @@ async fn protected_json_rpc(
     headers: HeaderMap,
     Json(body): Json<Value>,
 ) -> Response {
-    if let Err(rejection) = validate_mcp_transport_headers(&headers) {
+    if let Err(rejection) = validate_mcp_transport_headers(&state, &headers, uri.path()) {
         return mcp_transport_rejection(rejection);
     }
     if let Err(rejection) = validate_known_session(&state, &headers).await {
@@ -675,7 +698,7 @@ async fn protected_json_rpc(
     let request = ProtectedMcpJsonRpcRequest {
         host: host(&headers),
         path: uri.path().to_string(),
-        public_origin: public_origin(&headers),
+        public_origin: request_public_origin(&state, &headers, uri.path()),
         authorization: authorization(&headers),
         body,
     };
@@ -710,7 +733,7 @@ async fn protected_sse_get(
     OriginalUri(uri): OriginalUri,
     headers: HeaderMap,
 ) -> Response {
-    if let Err(rejection) = validate_mcp_transport_headers(&headers) {
+    if let Err(rejection) = validate_mcp_transport_headers(&state, &headers, uri.path()) {
         return mcp_transport_rejection(rejection);
     }
     if let Err(rejection) = validate_known_session(&state, &headers).await {
@@ -719,7 +742,7 @@ async fn protected_sse_get(
 
     let authorization = state
         .api
-        .handle(protected_request(&headers, uri.path(), None));
+        .handle(protected_request(&headers, uri.path(), &state, None));
     if !matches!(authorization, ProtectedMcpResponse::DispatchAllowed { .. }) {
         return protected_rejection(authorization);
     }
@@ -756,7 +779,7 @@ async fn protected_delete_session(
 ) -> Response {
     let authorization = state
         .api
-        .handle(protected_request(&headers, uri.path(), None));
+        .handle(protected_request(&headers, uri.path(), &state, None));
     if !matches!(authorization, ProtectedMcpResponse::DispatchAllowed { .. }) {
         return protected_rejection(authorization);
     }
@@ -806,8 +829,12 @@ async fn upstream_access_token_for_request(
         .map_err(|error| ApiErrorResponse::bad_gateway(error.to_string()))
 }
 
-fn validate_mcp_transport_headers(headers: &HeaderMap) -> Result<(), McpTransportRejection> {
-    if !valid_origin(headers) {
+fn validate_mcp_transport_headers(
+    state: &ProtectedMcpHttpState,
+    headers: &HeaderMap,
+    path: &str,
+) -> Result<(), McpTransportRejection> {
+    if !valid_origin(state, headers, path) {
         return Err(McpTransportRejection::ForbiddenOrigin);
     }
 
@@ -877,7 +904,7 @@ fn accepts_mcp_response(headers: &HeaderMap) -> bool {
     headers
         .get(header::ACCEPT)
         .and_then(|value| value.to_str().ok())
-        .is_none_or(|raw| {
+        .is_some_and(|raw| {
             raw.split(',').any(|part| {
                 let media = part
                     .trim()
@@ -900,11 +927,16 @@ fn valid_protocol_version(headers: &HeaderMap) -> bool {
         .is_none_or(|version| version == "2025-11-25")
 }
 
-fn valid_origin(headers: &HeaderMap) -> bool {
+fn valid_origin(state: &ProtectedMcpHttpState, headers: &HeaderMap, path: &str) -> bool {
     headers
         .get(header::ORIGIN)
         .and_then(|value| value.to_str().ok())
-        .is_none_or(|origin| origin == public_origin(headers))
+        .is_none_or(|origin| {
+            state
+                .api
+                .resource_origin(&host(headers), path)
+                .is_some_and(|allowed_origin| origin == allowed_origin)
+        })
 }
 
 fn session_id(headers: &HeaderMap) -> Result<Option<String>, McpTransportRejection> {
@@ -932,7 +964,9 @@ async fn validate_known_session(
     let Some(session_id) = session_id(headers)? else {
         return Ok(());
     };
-    if state.sessions.lock().await.contains(&session_id) {
+    let mut sessions = state.sessions.lock().await;
+    sessions.prune_expired();
+    if sessions.contains(&session_id) {
         Ok(())
     } else {
         Err(McpTransportRejection::UnknownSessionId)
@@ -964,6 +998,10 @@ async fn new_session_id(state: &ProtectedMcpHttpState) -> String {
     session_id
 }
 
+fn bounded_limit(requested: Option<usize>, default: usize) -> usize {
+    requested.unwrap_or(default).clamp(1, MAX_COLLECTION_LIMIT)
+}
+
 fn next_sse_event_id(last_event_id: &str) -> String {
     last_event_id
         .parse::<u64>()
@@ -976,14 +1014,22 @@ fn next_sse_event_id(last_event_id: &str) -> String {
 fn protected_request(
     headers: &HeaderMap,
     path: &str,
+    state: &ProtectedMcpHttpState,
     authorization_override: Option<String>,
 ) -> crate::ProtectedMcpRequest {
     crate::ProtectedMcpRequest {
         host: host(headers),
         path: path.to_string(),
-        public_origin: public_origin(headers),
+        public_origin: request_public_origin(state, headers, path),
         authorization: authorization_override.or_else(|| authorization(headers)),
     }
+}
+
+fn request_public_origin(state: &ProtectedMcpHttpState, headers: &HeaderMap, path: &str) -> String {
+    state
+        .api
+        .resource_origin(&host(headers), path)
+        .unwrap_or_else(|| public_origin(headers))
 }
 
 fn protected_rejection(response: ProtectedMcpResponse) -> Response {
@@ -1254,9 +1300,51 @@ struct RegistryHttpState {
 }
 
 type SharedOAuthService = Arc<Mutex<GatewayOAuthService<Box<dyn OAuthStore + Send>>>>;
-type SharedMcpSessions = Arc<Mutex<BTreeSet<String>>>;
+type SharedMcpSessions = Arc<Mutex<McpSessions>>;
 
 const MCP_SESSION_ID: &str = "mcp-session-id";
+const DEFAULT_SEARCH_LIMIT: usize = 10;
+const DEFAULT_REGISTRY_LIMIT: usize = 20;
+const MAX_COLLECTION_LIMIT: usize = 100;
+const MCP_SESSION_TTL: Duration = Duration::from_secs(60 * 30);
+const MAX_MCP_SESSIONS: usize = 1024;
+
+#[derive(Debug, Default)]
+struct McpSessions {
+    sessions: BTreeMap<String, Instant>,
+}
+
+impl McpSessions {
+    fn insert(&mut self, session_id: String) {
+        self.prune_expired();
+        if self.sessions.len() >= MAX_MCP_SESSIONS
+            && let Some(oldest) = self
+                .sessions
+                .iter()
+                .min_by_key(|(_, expires_at)| *expires_at)
+                .map(|(session_id, _)| session_id.clone())
+        {
+            self.sessions.remove(&oldest);
+        }
+        self.sessions
+            .insert(session_id, Instant::now() + MCP_SESSION_TTL);
+    }
+
+    fn contains(&self, session_id: &str) -> bool {
+        self.sessions
+            .get(session_id)
+            .is_some_and(|expires_at| *expires_at > Instant::now())
+    }
+
+    fn remove(&mut self, session_id: &str) -> bool {
+        self.sessions.remove(session_id).is_some()
+    }
+
+    fn prune_expired(&mut self) {
+        let now = Instant::now();
+        self.sessions.retain(|_, expires_at| *expires_at > now);
+    }
+}
 
 fn shared_oauth_service<S>(store: S) -> SharedOAuthService
 where

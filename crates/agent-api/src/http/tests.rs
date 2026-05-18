@@ -1,5 +1,5 @@
 use super::*;
-use agent_auth::{OAuthCredential, ScopeSet};
+use agent_auth::{FixtureBearerTokenVerifier, OAuthCredential, ScopeSet};
 use agent_gateway::{
     ProtectedRouteCollection, ProtectedRouteConfig, ProtectedRouteIndex, ProtectedRouteTarget,
 };
@@ -12,10 +12,7 @@ use axum::{
     http::{Request, StatusCode},
 };
 use serde_json::{Value, json};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
-};
+use std::{collections::BTreeMap, sync::Arc};
 use tokio::sync::Mutex;
 use tower::ServiceExt;
 
@@ -212,7 +209,7 @@ async fn marketplace_router_plans_and_applies_mcp_server() {
         applied["result"]["added_or_replaced_upstreams"],
         json!(["filesystem"])
     );
-    assert_eq!(applied["env_values"]["FILESYSTEM_TOKEN"], "secret");
+    assert_eq!(applied["env_values"]["FILESYSTEM_TOKEN"], "[REDACTED]");
     assert_eq!(
         applied["config"]["mcp"]["upstreams"]["filesystem"]["command"],
         "npx"
@@ -289,7 +286,7 @@ async fn protected_route_admin_router_cruds_statuses_and_tests_routes() {
 #[tokio::test]
 async fn protected_mcp_router_serves_metadata_and_authorized_json_rpc() {
     let runtime = Arc::new(McpRuntime::start(vec![fixture_config()]).await);
-    let router = protected_mcp_router(protected_routes(), runtime);
+    let router = protected_mcp_fixture_router(protected_routes(), runtime);
 
     let metadata = request_json(
         router.clone(),
@@ -310,6 +307,7 @@ async fn protected_mcp_router_serves_metadata_and_authorized_json_rpc() {
             .uri("/syslog")
             .header("host", "mcp.example.test")
             .header("x-forwarded-proto", "https")
+            .header("accept", "application/json")
             .header(
                 "authorization",
                 "Bearer sub=user-1;aud=https://mcp.example.test/syslog;scope=mcp:read",
@@ -336,7 +334,7 @@ async fn protected_mcp_router_serves_metadata_and_authorized_json_rpc() {
 #[tokio::test]
 async fn protected_mcp_router_rejects_missing_bearer_with_challenge() {
     let runtime = Arc::new(McpRuntime::start(vec![fixture_config()]).await);
-    let router = protected_mcp_router(protected_routes(), runtime);
+    let router = protected_mcp_fixture_router(protected_routes(), runtime);
 
     let response = router
         .oneshot(
@@ -345,6 +343,7 @@ async fn protected_mcp_router_rejects_missing_bearer_with_challenge() {
                 .uri("/syslog")
                 .header("host", "mcp.example.test")
                 .header("x-forwarded-proto", "https")
+                .header("accept", "application/json")
                 .header("content-type", "application/json")
                 .body(Body::from(
                     json!({
@@ -366,7 +365,7 @@ async fn protected_mcp_router_rejects_missing_bearer_with_challenge() {
 #[tokio::test]
 async fn protected_mcp_router_rejects_unacceptable_response_media() {
     let runtime = Arc::new(McpRuntime::start(vec![fixture_config()]).await);
-    let router = protected_mcp_router(protected_routes(), runtime);
+    let router = protected_mcp_fixture_router(protected_routes(), runtime);
 
     let response = router
         .oneshot(
@@ -398,9 +397,42 @@ async fn protected_mcp_router_rejects_unacceptable_response_media() {
 }
 
 #[tokio::test]
+async fn protected_mcp_router_rejects_missing_accept_header() {
+    let runtime = Arc::new(McpRuntime::start(vec![fixture_config()]).await);
+    let router = protected_mcp_fixture_router(protected_routes(), runtime);
+
+    let response = router
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/syslog")
+                .header("host", "mcp.example.test")
+                .header("x-forwarded-proto", "https")
+                .header(
+                    "authorization",
+                    "Bearer sub=user-1;aud=https://mcp.example.test/syslog;scope=mcp:read",
+                )
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "tools/list"
+                    })
+                    .to_string(),
+                ))
+                .expect("request"),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::NOT_ACCEPTABLE);
+}
+
+#[tokio::test]
 async fn protected_mcp_router_rejects_unsupported_protocol_version() {
     let runtime = Arc::new(McpRuntime::start(vec![fixture_config()]).await);
-    let router = protected_mcp_router(protected_routes(), runtime);
+    let router = protected_mcp_fixture_router(protected_routes(), runtime);
 
     let response = router
         .oneshot(
@@ -435,7 +467,7 @@ async fn protected_mcp_router_rejects_unsupported_protocol_version() {
 #[tokio::test]
 async fn protected_mcp_router_accepts_notifications_without_response_body() {
     let runtime = Arc::new(McpRuntime::start(vec![fixture_config()]).await);
-    let router = protected_mcp_router(protected_routes(), runtime);
+    let router = protected_mcp_fixture_router(protected_routes(), runtime);
 
     let response = router
         .oneshot(
@@ -469,7 +501,7 @@ async fn protected_mcp_router_accepts_notifications_without_response_body() {
 #[tokio::test]
 async fn protected_mcp_router_initializes_and_tracks_sessions() {
     let runtime = Arc::new(McpRuntime::start(vec![fixture_config()]).await);
-    let router = protected_mcp_router(protected_routes(), runtime);
+    let router = protected_mcp_fixture_router(protected_routes(), runtime);
 
     let initialize = router
         .clone()
@@ -543,7 +575,7 @@ async fn protected_mcp_router_initializes_and_tracks_sessions() {
 #[tokio::test]
 async fn protected_mcp_router_rejects_invalid_origin_and_unknown_session() {
     let runtime = Arc::new(McpRuntime::start(vec![fixture_config()]).await);
-    let router = protected_mcp_router(protected_routes(), runtime);
+    let router = protected_mcp_fixture_router(protected_routes(), runtime);
 
     let invalid_origin = router
         .clone()
@@ -606,7 +638,7 @@ async fn protected_mcp_router_rejects_invalid_origin_and_unknown_session() {
 #[tokio::test]
 async fn protected_mcp_router_allows_sse_and_session_delete() {
     let runtime = Arc::new(McpRuntime::start(vec![fixture_config()]).await);
-    let router = protected_mcp_router(protected_routes(), runtime);
+    let router = protected_mcp_fixture_router(protected_routes(), runtime);
 
     let get = router
         .clone()
@@ -721,10 +753,10 @@ async fn protected_mcp_router_fetches_subject_scoped_upstream_credential() {
         })
         .expect("credential");
     let state = ProtectedMcpHttpState {
-        api: ProtectedMcpRouteApi::new(protected_routes()),
+        api: ProtectedMcpRouteApi::new_with_fixture_verifier(protected_routes()),
         runtime,
         oauth: Some(shared_oauth_service(store)),
-        sessions: Arc::new(Mutex::new(BTreeSet::new())),
+        sessions: Arc::new(Mutex::new(McpSessions::default())),
     };
 
     let token = upstream_access_token_for_request(
@@ -1102,6 +1134,10 @@ fn normalized_registry_server() -> NormalizedMcpServer {
 
 fn protected_routes() -> ProtectedRouteIndex {
     ProtectedRouteIndex::from_routes(vec![protected_route("syslog", "/syslog")]).expect("routes")
+}
+
+fn protected_mcp_fixture_router(routes: ProtectedRouteIndex, runtime: Arc<McpRuntime>) -> Router {
+    protected_mcp_router_with_verifier(routes, runtime, Arc::new(FixtureBearerTokenVerifier))
 }
 
 fn protected_route(name: &str, public_path: &str) -> ProtectedRouteConfig {

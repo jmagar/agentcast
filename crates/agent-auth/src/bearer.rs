@@ -2,6 +2,7 @@ use crate::{AuthChallenge, ScopeSet};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
 #[cfg(test)]
@@ -23,9 +24,11 @@ pub trait BearerTokenVerifier: Send + Sync {
     fn verify(&self, authorization_header: &str) -> Result<BearerClaims, BearerError>;
 }
 
+#[cfg(any(test, feature = "fixture-auth"))]
 #[derive(Clone, Debug, Default)]
 pub struct FixtureBearerTokenVerifier;
 
+#[cfg(any(test, feature = "fixture-auth"))]
 impl BearerTokenVerifier for FixtureBearerTokenVerifier {
     fn verify(&self, authorization_header: &str) -> Result<BearerClaims, BearerError> {
         BearerClaims::from_authorization_header(authorization_header)
@@ -77,9 +80,15 @@ pub struct Jwk {
 pub struct JwtBearerTokenVerifier {
     keys: BTreeMap<Option<String>, Vec<u8>>,
     expected_audience: Option<String>,
+    expected_issuer: Option<String>,
+    clock_skew_seconds: u64,
+    #[cfg(test)]
+    now_unix_timestamp: Option<i64>,
 }
 
 impl JwtBearerTokenVerifier {
+    pub const DEFAULT_CLOCK_SKEW_SECONDS: u64 = 60;
+
     pub fn from_jwks(jwks: Jwks) -> Result<Self, BearerError> {
         let mut keys = BTreeMap::new();
         for key in jwks.keys {
@@ -102,11 +111,31 @@ impl JwtBearerTokenVerifier {
         Ok(Self {
             keys,
             expected_audience: None,
+            expected_issuer: None,
+            clock_skew_seconds: Self::DEFAULT_CLOCK_SKEW_SECONDS,
+            #[cfg(test)]
+            now_unix_timestamp: None,
         })
     }
 
     pub fn with_expected_audience(mut self, audience: impl Into<String>) -> Self {
         self.expected_audience = Some(audience.into());
+        self
+    }
+
+    pub fn with_expected_issuer(mut self, issuer: impl Into<String>) -> Self {
+        self.expected_issuer = Some(issuer.into());
+        self
+    }
+
+    pub fn with_clock_skew_seconds(mut self, seconds: u64) -> Self {
+        self.clock_skew_seconds = seconds;
+        self
+    }
+
+    #[cfg(test)]
+    fn with_now_unix_timestamp(mut self, now: i64) -> Self {
+        self.now_unix_timestamp = Some(now);
         self
     }
 }
@@ -139,6 +168,7 @@ impl BearerTokenVerifier for JwtBearerTokenVerifier {
 
         let payload: JwtPayload = serde_json::from_slice(&decode_base64url(encoded_payload)?)
             .map_err(|_| BearerError::MalformedToken)?;
+        self.validate_registered_claims(&payload)?;
         let audience = payload
             .primary_audience()
             .ok_or(BearerError::MissingAudience)?;
@@ -160,6 +190,41 @@ impl BearerTokenVerifier for JwtBearerTokenVerifier {
 }
 
 impl JwtBearerTokenVerifier {
+    fn validate_registered_claims(&self, payload: &JwtPayload) -> Result<(), BearerError> {
+        let now = self.now_unix_timestamp();
+        let skew = self.clock_skew_seconds as i64;
+        let exp = payload.exp.ok_or(BearerError::MissingExpiration)?;
+        if now > exp.saturating_add(skew) {
+            return Err(BearerError::TokenExpired);
+        }
+        if payload
+            .nbf
+            .is_some_and(|not_before| now.saturating_add(skew) < not_before)
+        {
+            return Err(BearerError::TokenNotYetValid);
+        }
+        if self
+            .expected_issuer
+            .as_deref()
+            .is_some_and(|expected| payload.iss.as_deref() != Some(expected))
+        {
+            return Err(BearerError::InvalidIssuer);
+        }
+        Ok(())
+    }
+
+    fn now_unix_timestamp(&self) -> i64 {
+        #[cfg(test)]
+        if let Some(now) = self.now_unix_timestamp {
+            return now;
+        }
+
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_secs() as i64)
+            .unwrap_or(0)
+    }
+
     fn select_key(&self, kid: &Option<String>) -> Result<&[u8], BearerError> {
         if let Some(secret) = self.keys.get(kid) {
             return Ok(secret);
@@ -256,6 +321,9 @@ struct JwtHeader {
 struct JwtPayload {
     sub: Option<String>,
     aud: Option<JwtAudience>,
+    exp: Option<i64>,
+    nbf: Option<i64>,
+    iss: Option<String>,
     scope: Option<String>,
     scp: Option<Vec<String>>,
 }
@@ -361,6 +429,14 @@ pub enum BearerError {
     MissingAudience,
     #[error("bearer token is invalid")]
     InvalidToken,
+    #[error("bearer token is missing expiration")]
+    MissingExpiration,
+    #[error("bearer token is expired")]
+    TokenExpired,
+    #[error("bearer token is not yet valid")]
+    TokenNotYetValid,
+    #[error("bearer token issuer is invalid")]
+    InvalidIssuer,
     #[error("JWT signing algorithm is not supported")]
     UnsupportedJwtAlgorithm,
     #[error("JWKS does not contain a usable signing key")]

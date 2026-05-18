@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 const MAX_SEARCH_FIELD_CHARS: usize = 256;
+const REDACTED: &str = "[REDACTED]";
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct SearchDocument {
@@ -58,7 +59,7 @@ impl SearchDocument {
 
 fn sanitize_field(raw: String) -> (String, bool) {
     let (mut value, redacted) = if is_secret_like(&raw) {
-        ("[REDACTED]".to_string(), true)
+        (REDACTED.to_string(), true)
     } else {
         (raw, false)
     };

@@ -13,9 +13,9 @@ related:
   - "docs/CRATE_BOUNDARIES.md"
   - "docs/CODE_ORGANIZATION.md"
   - "docs/specs/crates-and-dependencies.md"
-last_reviewed: "2026-05-15"
-last_modified: "2026-05-15"
-modified_on_branch: "gateway-first-skeleton"
+last_reviewed: "2026-05-18"
+last_modified: "2026-05-18"
+modified_on_branch: "review-remediation/full-review-issues"
 modified_at_version: "0.1.0"
 modified_at_commit: "d327495"
 review_basis: "local workspace crate and dependency policy plus gateway OAuth token exchange implementation"
@@ -181,3 +181,7 @@ Dependency-policy changes should also run the dependency audit once it exists:
 ```bash
 cargo xtask audit-deps
 ```
+
+The audit is implemented as a fast, repo-local manifest check. It currently
+enforces targeted forbidden edges and SDK-owner rules from this contract, such
+as preventing `agent-api` from depending directly on `agent-mcp`.
