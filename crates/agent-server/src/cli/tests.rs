@@ -1,11 +1,25 @@
 use super::*;
 use agent_auth::OAuthClientRegistration;
 use clap::Parser;
-use std::path::PathBuf;
+use std::{ffi::OsString, path::PathBuf, sync::Mutex};
+
+static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+fn parse_args<I, T>(args: I) -> Result<Args, clap::Error>
+where
+    I: IntoIterator<Item = T>,
+    T: Into<OsString> + Clone,
+{
+    let _guard = ENV_LOCK.lock().expect("env lock");
+    unsafe {
+        std::env::remove_var("AGENTCAST_PROTECTED_MCP_BEARER_TOKEN");
+    }
+    Args::try_parse_from(args)
+}
 
 #[test]
 fn parses_gateway_cli_subcommands() {
-    let args = Args::try_parse_from([
+    let args = parse_args([
         "agentcast",
         "gateway",
         "call",
@@ -38,7 +52,7 @@ fn parses_gateway_cli_subcommands() {
 
 #[test]
 fn parses_protected_mcp_server_bearer_token_flag() {
-    let args = Args::try_parse_from([
+    let args = parse_args([
         "agentcast",
         "--protected-mcp-host",
         "mcp.example.test",
@@ -60,8 +74,37 @@ fn parses_protected_mcp_server_bearer_token_flag() {
 }
 
 #[test]
+fn rejects_blank_protected_mcp_server_bearer_token_flag() {
+    let error = parse_args(["agentcast", "--protected-mcp-bearer-token", "   "])
+        .expect_err("blank bearer token should fail");
+
+    assert!(
+        error.to_string().contains("value must not be empty"),
+        "{error}"
+    );
+}
+
+#[test]
+fn rejects_blank_protected_mcp_server_bearer_token_env() {
+    let _guard = ENV_LOCK.lock().expect("env lock");
+    unsafe {
+        std::env::set_var("AGENTCAST_PROTECTED_MCP_BEARER_TOKEN", "");
+    }
+    let result = Args::try_parse_from(["agentcast"]);
+    unsafe {
+        std::env::remove_var("AGENTCAST_PROTECTED_MCP_BEARER_TOKEN");
+    }
+
+    let error = result.expect_err("blank env bearer token should fail");
+    assert!(
+        error.to_string().contains("value must not be empty"),
+        "{error}"
+    );
+}
+
+#[test]
 fn parses_protected_route_cli_subcommands() {
-    let args = Args::try_parse_from([
+    let args = parse_args([
         "agentcast",
         "gateway",
         "protected-route",
@@ -95,7 +138,7 @@ fn parses_protected_route_cli_subcommands() {
 
 #[test]
 fn parses_oauth_cli_subcommands_without_exposing_secret_result() {
-    let args = Args::try_parse_from([
+    let args = parse_args([
         "agentcast",
         "gateway",
         "oauth",
@@ -123,7 +166,7 @@ fn parses_oauth_cli_subcommands_without_exposing_secret_result() {
 
 #[test]
 fn parses_registry_search_with_offline_response() {
-    let args = Args::try_parse_from([
+    let args = parse_args([
         "agentcast",
         "registry",
         "search",
@@ -155,7 +198,7 @@ fn parses_registry_search_with_offline_response() {
 #[test]
 fn parses_marketplace_plan_and_apply_commands() {
     let server_json = normalized_server_json();
-    let args = Args::try_parse_from([
+    let args = parse_args([
         "agentcast",
         "marketplace",
         "plan-mcp",
@@ -171,7 +214,7 @@ fn parses_marketplace_plan_and_apply_commands() {
         })
     ));
 
-    let args = Args::try_parse_from([
+    let args = parse_args([
         "agentcast",
         "marketplace",
         "apply-mcp",

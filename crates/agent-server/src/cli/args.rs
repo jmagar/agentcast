@@ -28,12 +28,24 @@ pub(crate) struct Args {
     pub(crate) protected_mcp_auth_servers: Vec<String>,
     #[arg(long, default_value = "mcp:read")]
     pub(crate) protected_mcp_scopes: String,
-    #[arg(long, env = "AGENTCAST_PROTECTED_MCP_BEARER_TOKEN")]
+    #[arg(
+        long,
+        env = "AGENTCAST_PROTECTED_MCP_BEARER_TOKEN",
+        value_parser = non_blank_string
+    )]
     pub(crate) protected_mcp_bearer_token: Option<String>,
     #[arg(long)]
     pub(crate) oauth_store: Option<PathBuf>,
     #[arg(long, env = "AGENTCAST_OAUTH_KEY_HEX")]
     pub(crate) oauth_key_hex: Option<String>,
+}
+
+fn non_blank_string(value: &str) -> Result<String, String> {
+    if value.trim().is_empty() {
+        Err("value must not be empty".to_string())
+    } else {
+        Ok(value.to_string())
+    }
 }
 
 #[derive(Debug, Subcommand)]
