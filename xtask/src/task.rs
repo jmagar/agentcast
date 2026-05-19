@@ -2,6 +2,7 @@ use std::env;
 use std::ffi::OsString;
 
 use crate::audit;
+use crate::audit_deps;
 use crate::command;
 use crate::dev_env;
 use crate::{Error, Result};
@@ -68,8 +69,15 @@ const TASKS: &[Task] = &[
     ),
     Task::new(
         "ci",
-        "fmt-check, check, clippy, nextest-ci, deny",
-        TaskKind::Sequence(&["fmt-check", "check", "clippy", "nextest-ci", "deny"]),
+        "fmt-check, check, clippy, nextest-ci, deny, audit-deps",
+        TaskKind::Sequence(&[
+            "fmt-check",
+            "check",
+            "clippy",
+            "nextest-ci",
+            "deny",
+            "audit-deps",
+        ]),
     ),
     Task::new(
         "verify",
@@ -122,6 +130,11 @@ const TASKS: &[Task] = &[
         TaskKind::Cargo(CARGO_DENY_CHECK),
     ),
     Task::new(
+        "audit-deps",
+        "validate crate dependency boundary policy",
+        TaskKind::Builtin(Builtin::AuditDeps),
+    ),
+    Task::new(
         "audit-docs",
         "validate authored docs frontmatter, links, and upstream_refs",
         TaskKind::Builtin(Builtin::AuditDocs),
@@ -162,6 +175,7 @@ enum TaskKind {
 #[derive(Clone, Copy)]
 enum Builtin {
     AuditDocs,
+    AuditDeps,
     Doctor,
     Setup,
 }
@@ -197,6 +211,10 @@ fn run_task(task: &Task, extra: Vec<OsString>) -> Result<()> {
         TaskKind::Builtin(Builtin::AuditDocs) => {
             reject_extra(task.name, &extra)?;
             audit::run()
+        }
+        TaskKind::Builtin(Builtin::AuditDeps) => {
+            reject_extra(task.name, &extra)?;
+            audit_deps::run()
         }
         TaskKind::Builtin(Builtin::Doctor) => {
             reject_extra(task.name, &extra)?;

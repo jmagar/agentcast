@@ -1,4 +1,5 @@
 mod audit;
+mod audit_deps;
 mod command;
 mod dev_env;
 mod task;
@@ -11,6 +12,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     Usage(String),
     Audit(Vec<String>),
+    DependencyAudit(Vec<String>),
     DevEnv(Vec<String>),
     Io(std::io::Error),
     Failed { program: String, code: Option<i32> },
@@ -27,6 +29,13 @@ fn main() -> ExitCode {
         }
         Err(Error::Audit(errors)) => {
             eprintln!("xtask audit-docs failed with {} issue(s):", errors.len());
+            for error in errors {
+                eprintln!("- {error}");
+            }
+            ExitCode::FAILURE
+        }
+        Err(Error::DependencyAudit(errors)) => {
+            eprintln!("xtask audit-deps failed with {} issue(s):", errors.len());
             for error in errors {
                 eprintln!("- {error}");
             }

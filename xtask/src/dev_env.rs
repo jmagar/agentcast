@@ -4,20 +4,49 @@ use std::process::Command;
 use crate::{Error, Result};
 
 const REQUIRED_TOOLS: &[ToolCheck] = &[
-    ToolCheck::new("cargo", &["--version"]),
-    ToolCheck::new("rustc", &["--version"]),
-    ToolCheck::new("rustup", &["--version"]),
-    ToolCheck::new("cargo", &["nextest", "--version"]),
-    ToolCheck::new("lefthook", &["version"]),
-    ToolCheck::new("gitleaks", &["version"]),
-    ToolCheck::new("cargo", &["deny", "--version"]),
-    ToolCheck::new("taplo", &["--version"]),
-    ToolCheck::new("just", &["--version"]),
+    ToolCheck::required("cargo", &["--version"], "install Rust through rustup"),
+    ToolCheck::required("rustc", &["--version"], "install Rust through rustup"),
+    ToolCheck::required("rustup", &["--version"], "install rustup"),
+    ToolCheck::required(
+        "cargo",
+        &["nextest", "--version"],
+        "install cargo-nextest for the active cargo path",
+    ),
+    ToolCheck::required("lefthook", &["version"], "install lefthook"),
+    ToolCheck::required("gitleaks", &["version"], "install gitleaks"),
+    ToolCheck::required(
+        "cargo",
+        &["deny", "--version"],
+        "install cargo-deny for the active cargo path",
+    ),
+    ToolCheck::required("taplo", &["--version"], "install taplo"),
+    ToolCheck::required("just", &["--version"], "install just"),
+];
+
+const CARGO_SANITY_CHECKS: &[ToolCheck] = &[
+    ToolCheck::required(
+        "cargo",
+        &["metadata", "--no-deps", "--format-version", "1"],
+        "repair the active cargo/rustc path or invoke cargo through the intended rustup toolchain",
+    ),
+    ToolCheck::required(
+        "cargo",
+        &["check", "-p", "xtask", "--quiet"],
+        "if RUSTC_WRAPPER or sccache is failing locally, rerun with RUSTC_WRAPPER= or repair the wrapper",
+    ),
 ];
 
 const REQUIRED_TOOLCHAINS: &[ToolCheck] = &[
-    ToolCheck::new("rustup", &["run", "nightly", "cargo", "--version"]),
-    ToolCheck::new("rustup", &["run", "nightly", "rustc", "--version"]),
+    ToolCheck::required(
+        "rustup",
+        &["run", "nightly", "cargo", "--version"],
+        "install the nightly toolchain",
+    ),
+    ToolCheck::required(
+        "rustup",
+        &["run", "nightly", "rustc", "--version"],
+        "install the nightly toolchain",
+    ),
 ];
 
 const REQUIRED_COMPONENTS: &[RustupComponent] = &[RustupComponent::new("rustc-codegen-cranelift")];
@@ -26,6 +55,7 @@ const REQUIRED_COMPONENTS: &[RustupComponent] = &[RustupComponent::new("rustc-co
 struct ToolCheck {
     program: &'static str,
     args: &'static [&'static str],
+    fix_hint: &'static str,
 }
 
 #[derive(Clone, Copy)]
@@ -40,8 +70,16 @@ impl RustupComponent {
 }
 
 impl ToolCheck {
-    const fn new(program: &'static str, args: &'static [&'static str]) -> Self {
-        Self { program, args }
+    const fn required(
+        program: &'static str,
+        args: &'static [&'static str],
+        fix_hint: &'static str,
+    ) -> Self {
+        Self {
+            program,
+            args,
+            fix_hint,
+        }
     }
 
     fn label(&self) -> String {
@@ -72,6 +110,12 @@ fn check_dev_environment(install_hooks: bool) -> Result<()> {
 
     println!("Required tools:");
     for tool in REQUIRED_TOOLS {
+        check_tool(*tool, true, &mut issues);
+    }
+
+    println!("\nCargo execution:");
+    report_rustc_wrapper();
+    for tool in CARGO_SANITY_CHECKS {
         check_tool(*tool, true, &mut issues);
     }
 
@@ -115,10 +159,14 @@ fn check_tool(tool: ToolCheck, required: bool, issues: &mut Vec<String>) {
                 || "terminated by signal".to_owned(),
                 |code| format!("exited with status {code}"),
             );
+            let detail =
+                first_output_line(&output.stderr).or_else(|| first_output_line(&output.stdout));
             if required {
                 issues.push(format!(
-                    "required tool `{}` is installed but {status}",
-                    tool.label()
+                    "required command `{}` failed ({status}); {}; {}",
+                    tool.label(),
+                    tool.fix_hint,
+                    detail.unwrap_or_else(|| "no output captured".to_owned())
                 ));
                 println!("  fail {} ({status})", tool.label());
             } else {
@@ -128,8 +176,9 @@ fn check_tool(tool: ToolCheck, required: bool, issues: &mut Vec<String>) {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             if required {
                 issues.push(format!(
-                    "required tool `{}` was not found on PATH",
-                    tool.label()
+                    "required command `{}` was not found on PATH; {}",
+                    tool.label(),
+                    tool.fix_hint
                 ));
                 println!("  fail {} (not found)", tool.label());
             } else {
@@ -138,11 +187,26 @@ fn check_tool(tool: ToolCheck, required: bool, issues: &mut Vec<String>) {
         }
         Err(error) => {
             if required {
-                issues.push(format!("could not run `{}`: {error}", tool.label()));
+                issues.push(format!(
+                    "could not run `{}`: {error}; {}",
+                    tool.label(),
+                    tool.fix_hint
+                ));
                 println!("  fail {} ({error})", tool.label());
             } else {
                 println!("  skip {} ({error}; optional)", tool.label());
             }
+        }
+    }
+}
+
+fn report_rustc_wrapper() {
+    match std::env::var("RUSTC_WRAPPER") {
+        Ok(value) if !value.trim().is_empty() => {
+            println!("  info RUSTC_WRAPPER={value}");
+        }
+        _ => {
+            println!("  ok   RUSTC_WRAPPER unset");
         }
     }
 }

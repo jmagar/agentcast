@@ -12,7 +12,6 @@ description = "AgentCast HTTP API routes, DTOs, server state, and Axum integrati
 agent-core = { path = "../agent-core" }
 agent-config = { path = "../agent-config" }
 agent-protocol = { path = "../agent-protocol" }
-agent-mcp = { path = "../agent-mcp" }
 agent-registry = { path = "../agent-registry" }
 agent-marketplace = { path = "../agent-marketplace" }
 agent-runtime = { path = "../agent-runtime" }
@@ -37,3 +36,6 @@ tracing.workspace = true
 uuid.workspace = true
 jiff.workspace = true
 url.workspace = true
+
+[dev-dependencies]
+agent-auth = { path = "../agent-auth", features = ["fixture-auth"] }

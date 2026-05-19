@@ -1,5 +1,7 @@
+#[cfg(test)]
+use agent_auth::FixtureBearerTokenVerifier;
 use agent_auth::{
-    AuthDecision, BearerTokenVerifier, FixtureBearerTokenVerifier, ProtectedResourceMetadata,
+    AuthDecision, BearerTokenVerifier, ProtectedResourceMetadata, StaticBearerTokenVerifier,
 };
 use agent_gateway::{ProtectedRouteIndex, ProtectedRouteTarget};
 use agent_protocol::{McpServerId, McpToolId};
@@ -8,6 +10,7 @@ use agent_runtime::{
 };
 use serde_json::{Map, Value, json};
 use std::sync::Arc;
+use url::Url;
 
 #[cfg(test)]
 mod tests;
@@ -20,7 +23,7 @@ pub struct ProtectedMcpRouteApi {
 
 impl ProtectedMcpRouteApi {
     pub fn new(routes: ProtectedRouteIndex) -> Self {
-        Self::new_with_verifier(routes, Arc::new(FixtureBearerTokenVerifier))
+        Self::new_with_verifier(routes, Arc::new(StaticBearerTokenVerifier::default()))
     }
 
     pub fn new_with_verifier(
@@ -28,6 +31,11 @@ impl ProtectedMcpRouteApi {
         verifier: Arc<dyn BearerTokenVerifier>,
     ) -> Self {
         Self { routes, verifier }
+    }
+
+    #[cfg(test)]
+    pub fn new_with_fixture_verifier(routes: ProtectedRouteIndex) -> Self {
+        Self::new_with_verifier(routes, Arc::new(FixtureBearerTokenVerifier))
     }
 
     pub fn handle(&self, request: ProtectedMcpRequest) -> ProtectedMcpResponse {
@@ -64,6 +72,20 @@ impl ProtectedMcpRouteApi {
                 www_authenticate: challenge.www_authenticate(),
             },
         }
+    }
+
+    pub fn resource_origin(&self, host: &str, path: &str) -> Option<String> {
+        let route = self
+            .routes
+            .resolve(host, path)
+            .or_else(|| self.routes.resolve_metadata(host, path))?;
+        let resource = Url::parse(&route.resource_uri).ok()?;
+        let host = resource.host_str()?;
+        let port = resource
+            .port()
+            .map(|port| format!(":{port}"))
+            .unwrap_or_default();
+        Some(format!("{}://{}{}", resource.scheme(), host, port))
     }
 
     pub async fn handle_json_rpc(

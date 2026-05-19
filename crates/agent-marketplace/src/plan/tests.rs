@@ -7,6 +7,13 @@ fn install_plan_preview_is_deterministic() {
         description: "Add filesystem MCP upstream".into(),
         target: "mcp.upstreams.filesystem".into(),
         preview: serde_json::json!({"command": "npx"}),
+        apply: InstallStepApply::AddMcpUpstream {
+            id: "filesystem".into(),
+            transport: InstallMcpUpstreamTransport::Stdio {
+                command: "npx".into(),
+                args: vec![],
+            },
+        },
     });
 
     assert_eq!(plan.package, "io.modelcontextprotocol/filesystem");

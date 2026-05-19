@@ -3,9 +3,11 @@ pub mod oauth;
 pub mod protected_resource;
 pub mod scope;
 
+#[cfg(any(test, feature = "fixture-auth"))]
+pub use bearer::FixtureBearerTokenVerifier;
 pub use bearer::{
-    AuthDecision, AuthorizedSubject, BearerClaims, BearerError, BearerTokenVerifier,
-    FixtureBearerTokenVerifier, Jwk, Jwks, JwtBearerTokenVerifier, StaticBearerTokenVerifier,
+    AuthDecision, AuthorizedSubject, BearerClaims, BearerError, BearerTokenVerifier, Jwk, Jwks,
+    JwtBearerTokenVerifier, StaticBearerTokenVerifier,
 };
 pub use oauth::{
     OAuthCallback, OAuthClientRegistration, OAuthCredential, OAuthError, OAuthProviderMetadata,

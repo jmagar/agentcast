@@ -13,9 +13,9 @@ related:
   - "docs/contracts/crates-and-dependencies.md"
   - "docs/CRATE_BOUNDARIES.md"
   - "docs/QUALITY_GATES.md"
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-18"
+last_modified: "2026-05-18"
+modified_on_branch: "review-remediation/full-review-issues"
 modified_at_version: "0.1.0"
 modified_at_commit: "e0bd04f"
 review_basis: "local workspace crate and dependency policy"
@@ -27,13 +27,13 @@ This spec describes how AgentCast should implement and verify the [crates and de
 
 ## Dependency Audit Command
 
-Add a future xtask:
+Use the implemented xtask:
 
 ```bash
 cargo xtask audit-deps
 ```
 
-The command should be fast enough for pre-push and should not require network access.
+The command is fast enough for pre-push and does not require network access.
 
 The audit should parse the workspace manifests from:
 
@@ -86,7 +86,12 @@ post-v0:     agent-stash, agent-fleet
 tooling:     xtask
 ```
 
-Layer checks should flag dependency edges that invert ownership. The command may start with targeted deny-list checks before adding a complete dependency graph policy.
+Layer checks should flag dependency edges that invert ownership. The current implementation starts with targeted deny-list checks before adding a complete dependency graph policy.
+
+The only current surface-to-adapter exception is `agent-server` -> `agent-mcp`
+for the temporary v0 stdio gateway composition path. The audit must encode that
+exception explicitly and continue to reject broad surface crate dependencies on
+protocol adapters.
 
 ## Output Format
 
@@ -125,11 +130,11 @@ Do not silently ignore dependency edges.
 
 ## Integration
 
-Once implemented and stable, add `cargo xtask audit-deps` to:
+`cargo xtask audit-deps` is part of:
 
 - `cargo xtask verify`.
-- pre-push if runtime remains acceptable.
 - `docs/QUALITY_GATES.md`.
 
-Do not add it to pre-commit without explicit approval in `docs/DECISIONS.md`.
+It is also included in the `cargo xtask ci` sequence.
 
+Do not add it to pre-commit without explicit approval in `docs/DECISIONS.md`.

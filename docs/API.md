@@ -15,9 +15,9 @@ upstream_refs:
   - "docs/references/mcp/docs/markdown/0172-modelcontextprotocol-io-registry-faq.md"
 related:
   - "docs/MVP.md"
-last_reviewed: "2026-05-13"
-last_modified: "2026-05-13"
-modified_on_branch: "main"
+last_reviewed: "2026-05-18"
+last_modified: "2026-05-18"
+modified_on_branch: "review-remediation/full-review-issues"
 modified_at_version: "0.1.0"
 modified_at_commit: "b941533"
 review_basis: "cross-referenced against local docs/references snapshot"
@@ -51,9 +51,14 @@ They must not:
 
 ## Response Shape
 
-Use stable envelopes for API responses.
+v0 currently returns direct JSON values for implemented route families. Lists are
+plain arrays and mutation/status routes return route-specific DTOs.
 
-Suggested success envelope:
+Future compatibility work should move stable product APIs toward common
+success/error envelopes once pagination and generated UI contracts need that
+shape.
+
+Future success envelope:
 
 ```json
 {
@@ -64,7 +69,7 @@ Suggested success envelope:
 }
 ```
 
-Suggested error envelope:
+Future error envelope:
 
 ```json
 {
@@ -78,15 +83,29 @@ Suggested error envelope:
 
 ## Route Families
 
-Initial route families:
+Implemented v0 route families:
 
 ```txt
-/v1/health
+/v1/gateway/*
+/v1/registry/search
+/v1/marketplace/mcp/*
+/v1/oauth/*
+/v1/protected-routes/*
+/.well-known/oauth-protected-resource/*
+/{protected_mcp_route}
+```
+
+The mounted protected MCP route path is configured by protected-route state. It
+is not under `/v1`; it is a public MCP Streamable HTTP transport surface guarded
+by the configured protected-route auth policy.
+
+Planned or contract-target route families that are not the current v0 HTTP
+surface:
+
+```txt
 /v1/mcp/servers
 /v1/launcher/actions
 /v1/launcher/invocations
-/v1/registry
-/v1/gateway
 /v1/config
 ```
 
@@ -94,7 +113,7 @@ Initial route families:
 
 The API is a primary agent surface.
 
-Requirements:
+Target requirements:
 
 - collection endpoints support pagination.
 - collection endpoints support filtering before pagination.
@@ -104,7 +123,7 @@ Requirements:
 - no endpoint returns unbounded collections by default.
 - large payloads use explicit detail/read endpoints instead of being embedded in list responses.
 
-Initial MCP runtime routes must cover:
+Planned MCP runtime routes should cover:
 
 ```txt
 GET /v1/mcp/servers
